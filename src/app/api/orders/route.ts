@@ -120,7 +120,7 @@ export async function POST(request: Request) {
         })
         .returning({ id: orders.id });
 
-      return { order, poolNumber: target.number, waitlist };
+      return { order, waitlist };
     });
 
     await sendReservationNotification({
@@ -128,9 +128,7 @@ export async function POST(request: Request) {
       phone: parsed.data.phone,
       locality: parsed.data.locality,
       quarterCount: parsed.data.quarterCount,
-      poolNumber: result.poolNumber,
       partLabel: partTypeLabel(partType),
-      waitlist: result.waitlist,
     }).catch((error) => console.error("MAX notification failed", error));
 
     return NextResponse.json({
