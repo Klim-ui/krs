@@ -61,11 +61,13 @@ export async function sendReservationNotification(order: ReservationMessage) {
     return;
   }
 
-  const recipients = [
-    chatId ? { chat_id: chatId } : null,
-    chatId ? { user_id: chatId } : null,
-    userId && userId !== chatId ? { user_id: userId } : null,
-  ].filter((item): item is Record<string, string> => item !== null);
+  const recipients: Array<Record<string, string>> = [];
+  if (chatId) {
+    recipients.push({ chat_id: chatId }, { user_id: chatId });
+  }
+  if (userId && userId !== chatId) {
+    recipients.push({ user_id: userId });
+  }
 
   if (recipients.length === 0) {
     console.error("MAX notification skipped: no MAX_CHAT_ID or MAX_USER_ID");
