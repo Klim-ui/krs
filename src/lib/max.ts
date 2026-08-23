@@ -8,10 +8,11 @@ type ReservationMessage = {
 
 export async function sendReservationNotification(order: ReservationMessage) {
   const token = process.env.MAX_BOT_TOKEN;
+  const userId = process.env.MAX_USER_ID;
   const chatId = process.env.MAX_CHAT_ID;
 
-  // MAX integration becomes active automatically after both values are added.
-  if (!token || !chatId) return;
+  // Personal user delivery takes priority over group chat delivery.
+  if (!token || (!userId && !chatId)) return;
 
   const text = [
     "🥩 Новая бронь мяса",
@@ -24,7 +25,11 @@ export async function sendReservationNotification(order: ReservationMessage) {
   ].join("\n");
 
   const url = new URL("https://platform-api2.max.ru/messages");
-  url.searchParams.set("chat_id", chatId);
+  if (userId) {
+    url.searchParams.set("user_id", userId);
+  } else if (chatId) {
+    url.searchParams.set("chat_id", chatId);
+  }
 
   const response = await fetch(url, {
     method: "POST",

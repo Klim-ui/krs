@@ -21,7 +21,8 @@ npm run dev
 - `AUTH_SECRET` — случайная строка от 32 символов для подписи сессии.
 - `ADMIN_PASSWORD` — пароль CRM.
 - `MAX_BOT_TOKEN` — токен MAX-бота после модерации, необязательно.
-- `MAX_CHAT_ID` — ID чата для уведомлений из `GET /updates`, необязательно.
+- `MAX_USER_ID` — ID пользователя для личных уведомлений из `bot_started`.
+- `MAX_CHAT_ID` — альтернативный ID группового чата; `MAX_USER_ID` приоритетнее.
 
 ## Команды
 
@@ -38,5 +39,5 @@ npm run db:migrate   # применить миграции
 
 1. Создайте проект из GitHub-репозитория.
 2. Добавьте PostgreSQL-сервис.
-3. Добавьте `AUTH_SECRET`, `ADMIN_PASSWORD`, а после модерации бота — `MAX_BOT_TOKEN` и `MAX_CHAT_ID`.
+3. Добавьте `AUTH_SECRET`, `ADMIN_PASSWORD`, а после модерации бота — `MAX_BOT_TOKEN` и `MAX_USER_ID`.
 4. Railway автоматически выполнит сборку, миграции и запуск по `railway.json`.
