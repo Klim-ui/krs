@@ -22,24 +22,31 @@ function buildMessage(order: ReservationMessage) {
   ].join("\n");
 }
 
-async function sendMaxMessage(token: string, text: string, target: URLSearchParams) {
+async function sendMaxMessage(
+  token: string,
+  text: string,
+  target: Record<string, string>,
+  authorization: string,
+) {
   const url = new URL("https://platform-api2.max.ru/messages");
-  target.forEach((value, key) => url.searchParams.set(key, value));
+  for (const [key, value] of Object.entries(target)) {
+    url.searchParams.set(key, value);
+  }
 
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: token.trim(),
+      Authorization: authorization,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ text, notify: true }),
     signal: AbortSignal.timeout(5_000),
   });
 
+  const details = await response.text().catch(() => "");
   if (!response.ok) {
-    const details = await response.text().catch(() => "");
     throw new Error(
-      `MAX API returned ${response.status}${details ? `: ${details}` : ""}`,
+      `MAX API ${JSON.stringify(target)} ${response.status}${details ? `: ${details}` : ""}`,
     );
   }
 }
@@ -49,37 +56,38 @@ export async function sendReservationNotification(order: ReservationMessage) {
   const chatId = process.env.MAX_CHAT_ID?.trim();
   const userId = process.env.MAX_USER_ID?.trim();
 
-  if (!token || (!chatId && !userId)) return;
+  if (!token) {
+    console.error("MAX notification skipped: MAX_BOT_TOKEN is empty");
+    return;
+  }
+
+  const recipients = [
+    chatId ? { chat_id: chatId } : null,
+    chatId ? { user_id: chatId } : null,
+    userId && userId !== chatId ? { user_id: userId } : null,
+  ].filter((item): item is Record<string, string> => item !== null);
+
+  if (recipients.length === 0) {
+    console.error("MAX notification skipped: no MAX_CHAT_ID or MAX_USER_ID");
+    return;
+  }
 
   const text = buildMessage(order);
-  const errors: unknown[] = [];
+  const authorizations = [token, `Bearer ${token}`];
+  const errors: string[] = [];
 
-  // Dialog chat_id is the real conversation; user_id is only a fallback.
-  if (chatId) {
-    try {
-      await sendMaxMessage(
-        token,
-        text,
-        new URLSearchParams({ chat_id: chatId }),
-      );
-      return;
-    } catch (error) {
-      errors.push(error);
+  for (const authorization of authorizations) {
+    for (const target of recipients) {
+      try {
+        await sendMaxMessage(token, text, target, authorization);
+        console.info("MAX notification sent", target);
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(message);
+      }
     }
   }
 
-  if (userId) {
-    try {
-      await sendMaxMessage(
-        token,
-        text,
-        new URLSearchParams({ user_id: userId }),
-      );
-      return;
-    } catch (error) {
-      errors.push(error);
-    }
-  }
-
-  throw errors[0] ?? new Error("MAX recipient is not configured");
+  throw new Error(errors.join(" | "));
 }
