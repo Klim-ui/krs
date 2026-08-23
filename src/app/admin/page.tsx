@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import { redirect } from "next/navigation";
+import { MaxDialogFinder } from "@/components/max-dialog-finder";
 import { StatusSelect } from "@/components/status-select";
 import { isAuthenticated } from "@/lib/auth";
 import { getAdminData, partTypeLabel } from "@/lib/orders";
@@ -236,6 +237,8 @@ export default async function AdminPage() {
             </form>
           </section>
         )}
+
+        <MaxDialogFinder />
       </div>
     </main>
   );

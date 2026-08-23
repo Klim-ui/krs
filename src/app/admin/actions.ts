@@ -12,6 +12,7 @@ import {
   setActivePoolSlaughterDate,
   updateOrderStatus,
 } from "@/lib/orders";
+import { findMaxDialogs } from "@/lib/max";
 import { poolSchema } from "@/lib/validation";
 
 async function requireAdmin() {
@@ -68,4 +69,9 @@ export async function setSlaughterDate(formData: FormData) {
 export async function logout() {
   await destroySession();
   redirect("/admin/login");
+}
+
+export async function lookupMaxDialog() {
+  await requireAdmin();
+  return findMaxDialogs();
 }
