@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { lookupMaxDialog } from "@/app/admin/actions";
 
 export function MaxDialogFinder() {
   const [pending, setPending] = useState(false);
@@ -16,13 +15,26 @@ export function MaxDialogFinder() {
     setPending(true);
     setError("");
     try {
-      setResult(await lookupMaxDialog());
-    } catch (lookupError) {
-      setError(
-        lookupError instanceof Error
-          ? lookupError.message
-          : "Не удалось получить ID",
-      );
+      const response = await fetch("/api/admin/max-dialog", {
+        credentials: "include",
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        chatIds?: string[];
+        userIds?: string[];
+        updateCount?: number;
+      };
+      if (!response.ok) {
+        setError(data.error ?? "Не удалось получить ID");
+        return;
+      }
+      setResult({
+        chatIds: data.chatIds ?? [],
+        userIds: data.userIds ?? [],
+        updateCount: data.updateCount ?? 0,
+      });
+    } catch {
+      setError("Не удалось получить ID");
     } finally {
       setPending(false);
     }
@@ -32,9 +44,9 @@ export function MaxDialogFinder() {
     <section className="mt-8 rounded-2xl border border-black/8 bg-white p-5 sm:p-7">
       <h2 className="font-serif text-2xl font-semibold">MAX-уведомления</h2>
       <p className="mt-2 text-sm leading-6 text-[#71685b]">
-        Сначала напиши боту «Начать» в MAX, потом нажми кнопку. Число из адреса
-        web.max.ru — не то. Сюда попадёт chat_id из API. Его нужно поставить в
-        Railway → MAX_CHAT_ID.
+        Открой админку в обычном Chrome: https://www.krs-tavr.ru/admin — не
+        через кнопку «Открыть» внутри MAX. Напиши боту «Начать», затем нажми
+        кнопку. Полученный chat_id поставь в Railway → MAX_CHAT_ID.
       </p>
       <button
         type="button"

@@ -179,6 +179,44 @@ export async function setActivePoolSlaughterDate(date: Date) {
     .where(eq(pools.status, "ACTIVE"));
 }
 
+export async function activatePool(id: string) {
+  const db = getDb();
+  await db.transaction(async (tx) => {
+    await tx
+      .update(pools)
+      .set({ status: "CLOSED", closedAt: new Date() })
+      .where(eq(pools.status, "ACTIVE"));
+
+    await tx
+      .update(pools)
+      .set({ status: "ACTIVE", closedAt: null })
+      .where(eq(pools.id, id));
+  });
+}
+
+export async function resetReservations() {
+  const db = getDb();
+  await db.transaction(async (tx) => {
+    await tx.delete(orders);
+    await tx
+      .update(pools)
+      .set({ status: "CLOSED", closedAt: new Date() });
+
+    const [firstPool] = await tx
+      .select({ id: pools.id })
+      .from(pools)
+      .orderBy(asc(pools.number))
+      .limit(1);
+
+    if (firstPool) {
+      await tx
+        .update(pools)
+        .set({ status: "ACTIVE", closedAt: null })
+        .where(eq(pools.id, firstPool.id));
+    }
+  });
+}
+
 export async function createPool(input: {
   capacityQuarters: number;
   estimatedQuarterWeight: number;

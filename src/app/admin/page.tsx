@@ -14,8 +14,10 @@ import { isAuthenticated } from "@/lib/auth";
 import { getAdminData, partTypeLabel } from "@/lib/orders";
 import {
   addPool,
+  clearReservations,
   closePool,
   logout,
+  openPool,
   setSlaughterDate,
 } from "./actions";
 
@@ -192,6 +194,54 @@ export default async function AdminPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-2xl border border-black/8 bg-white">
+          <div className="flex flex-col justify-between gap-3 border-b border-black/8 px-5 py-4 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="font-serif text-2xl font-semibold">Туши</h2>
+              <p className="mt-1 text-sm text-[#71685b]">
+                Тестовые заявки занимают места. Можно открыть нужную тушу или
+                сбросить все брони.
+              </p>
+            </div>
+            <form action={clearReservations}>
+              <button className="rounded-xl border border-black/10 px-4 py-2.5 text-sm font-semibold text-[#71685b] hover:bg-black/5">
+                Сбросить все заявки
+              </button>
+            </form>
+          </div>
+          <div className="divide-y divide-black/6">
+            {data.pools.map((pool) => (
+              <div
+                key={pool.id}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <b>Туша №{pool.number}</b>
+                  <p className="text-sm text-[#71685b]">
+                    {pool.status === "ACTIVE"
+                      ? "Сейчас собираем"
+                      : pool.status === "UPCOMING"
+                        ? "Лист ожидания"
+                        : "Закрыта"}
+                    {` · ${pool.capacityQuarters} четвертей`}
+                  </p>
+                </div>
+                {pool.status !== "ACTIVE" && (
+                  <form action={openPool}>
+                    <input type="hidden" name="id" value={pool.id} />
+                    <button className="rounded-xl bg-[#47733d] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#395f31]">
+                      Открыть набор
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+            {data.pools.length === 0 && (
+              <p className="px-5 py-8 text-sm text-[#71685b]">Пулов ещё нет</p>
+            )}
           </div>
         </section>
 

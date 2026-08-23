@@ -7,12 +7,13 @@ import {
   isAuthenticated,
 } from "@/lib/auth";
 import {
+  activatePool,
   closeActivePool,
   createPool,
+  resetReservations,
   setActivePoolSlaughterDate,
   updateOrderStatus,
 } from "@/lib/orders";
-import { findMaxDialogs } from "@/lib/max";
 import { poolSchema } from "@/lib/validation";
 
 async function requireAdmin() {
@@ -53,6 +54,20 @@ export async function closePool() {
   revalidatePath("/admin");
 }
 
+export async function openPool(formData: FormData) {
+  await requireAdmin();
+  await activatePool(String(formData.get("id") ?? ""));
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
+export async function clearReservations() {
+  await requireAdmin();
+  await resetReservations();
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
 export async function setSlaughterDate(formData: FormData) {
   await requireAdmin();
   const value = String(formData.get("slaughterDate") ?? "");
@@ -71,7 +86,3 @@ export async function logout() {
   redirect("/admin/login");
 }
 
-export async function lookupMaxDialog() {
-  await requireAdmin();
-  return findMaxDialogs();
-}
