@@ -1,8 +1,15 @@
-import { eq, sql } from "drizzle-orm";
+import { asc, inArray, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
 import { sendReservationNotification } from "@/lib/max";
+import {
+  PART_PRICES,
+  QUARTERS_PER_HEAD,
+  TOTAL_HEADS,
+  partTypeLabel,
+  toPartType,
+} from "@/lib/orders";
 import { orderSchema } from "@/lib/validation";
 
 class CapacityError extends Error {}
@@ -20,55 +27,100 @@ export async function POST(request: Request) {
     );
   }
 
+  const partType = toPartType(parsed.data.part_type);
+  const pricePerKg = PART_PRICES[partType];
+
   try {
     const db = getDb();
     const result = await db.transaction(async (tx) => {
       await tx.execute(
-        sql`select id from ${pools} where ${pools.status} = 'ACTIVE' for update`,
+        sql`select id from ${pools} where ${pools.status} in ('ACTIVE', 'UPCOMING') for update`,
       );
 
-      const [pool] = await tx
+      const openPools = await tx
         .select()
         .from(pools)
-        .where(eq(pools.status, "ACTIVE"))
-        .limit(1);
+        .where(inArray(pools.status, ["ACTIVE", "UPCOMING"]))
+        .orderBy(asc(pools.number));
 
-      if (!pool) throw new CapacityError("Сейчас нет открытого пула");
+      if (openPools.length === 0) {
+        throw new CapacityError("Сейчас нет открытого пула");
+      }
 
-      const [reserved] = await tx
+      const reservations = await tx
         .select({
+          poolId: orders.poolId,
           quarters:
             sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
         })
         .from(orders)
-        .where(eq(orders.poolId, pool.id));
+        .where(
+          inArray(
+            orders.poolId,
+            openPools.map((pool) => pool.id),
+          ),
+        )
+        .groupBy(orders.poolId);
 
-      const remaining =
-        pool.capacityQuarters - (reserved?.quarters ?? 0);
-      if (parsed.data.quarterCount > remaining) {
-        throw new CapacityError(
-          remaining > 0
-            ? `Осталось только ${remaining} четверти`
-            : "Этот пул уже заполнен",
-        );
+      const reservedByPool = new Map(
+        reservations.map((row) => [row.poolId, row.quarters]),
+      );
+
+      let target = openPools.find((pool) => {
+        const remaining =
+          pool.capacityQuarters - (reservedByPool.get(pool.id) ?? 0);
+        return remaining >= parsed.data.quarterCount;
+      });
+
+      if (!target) {
+        const [lastPool] = await tx
+          .select({ number: pools.number })
+          .from(pools)
+          .orderBy(sql`${pools.number} desc`)
+          .limit(1);
+        const nextNumber = (lastPool?.number ?? 0) + 1;
+
+        if (nextNumber > TOTAL_HEADS) {
+          throw new CapacityError("Все 12 четвертей уже забронированы");
+        }
+
+        const [created] = await tx
+          .insert(pools)
+          .values({
+            number: nextNumber,
+            status: "UPCOMING",
+            capacityQuarters: QUARTERS_PER_HEAD,
+            estimatedQuarterWeight: String(
+              openPools[0]?.estimatedQuarterWeight ?? "50",
+            ),
+            pricePerKg: String(PART_PRICES.ANY),
+          })
+          .returning();
+        target = created;
       }
+
+      const activePool = openPools.find((pool) => pool.status === "ACTIVE");
+      const waitlist = Boolean(
+        activePool && target.number > activePool.number,
+      );
 
       const [order] = await tx
         .insert(orders)
         .values({
-          poolId: pool.id,
+          poolId: target.id,
           name: parsed.data.name,
           phone: parsed.data.phone,
           locality: parsed.data.locality,
           quarterCount: parsed.data.quarterCount,
-          pricePerKgSnapshot: pool.pricePerKg,
+          partType,
+          pricePerKgSnapshot: String(pricePerKg),
           estimatedWeightSnapshot: String(
-            Number(pool.estimatedQuarterWeight) * parsed.data.quarterCount,
+            Number(target.estimatedQuarterWeight) * parsed.data.quarterCount,
           ),
         })
         .returning({ id: orders.id });
 
-      return { order, poolNumber: pool.number };
+      return { order, poolNumber: target.number, waitlist };
     });
 
     await sendReservationNotification({
@@ -77,9 +129,15 @@ export async function POST(request: Request) {
       locality: parsed.data.locality,
       quarterCount: parsed.data.quarterCount,
       poolNumber: result.poolNumber,
+      partLabel: partTypeLabel(partType),
+      waitlist: result.waitlist,
     }).catch((error) => console.error("MAX notification failed", error));
 
-    return NextResponse.json({ ok: true, orderId: result.order.id });
+    return NextResponse.json({
+      ok: true,
+      orderId: result.order.id,
+      waitlist: result.waitlist,
+    });
   } catch (error) {
     if (error instanceof CapacityError) {
       return NextResponse.json({ error: error.message }, { status: 409 });

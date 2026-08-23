@@ -10,6 +10,7 @@ import {
 
 export const poolStatus = pgEnum("pool_status", [
   "ACTIVE",
+  "UPCOMING",
   "CLOSED",
   "COMPLETED",
 ]);
@@ -20,6 +21,8 @@ export const orderStatus = pgEnum("order_status", [
   "REJECTED",
   "DELIVERED",
 ]);
+
+export const partType = pgEnum("part_type", ["FRONT", "BACK", "ANY"]);
 
 export const pools = pgTable("pools", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -49,6 +52,7 @@ export const orders = pgTable("orders", {
   phone: text("phone").notNull(),
   locality: text("locality").notNull(),
   quarterCount: integer("box_count").notNull(),
+  partType: partType("part_type").notNull().default("ANY"),
   status: orderStatus("status").notNull().default("NEW"),
   pricePerKgSnapshot: numeric("price_per_kg_snapshot", {
     precision: 10,

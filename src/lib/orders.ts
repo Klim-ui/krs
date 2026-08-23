@@ -1,47 +1,83 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
+
+export const TOTAL_HEADS = 3;
+export const QUARTERS_PER_HEAD = 4;
+export const TOTAL_QUARTERS = TOTAL_HEADS * QUARTERS_PER_HEAD;
+
+export const PART_PRICES = {
+  FRONT: 530,
+  BACK: 570,
+  ANY: 550,
+} as const;
+
+export type PartType = keyof typeof PART_PRICES;
 
 export type CurrentPool = {
   id: string;
   number: number;
-  capacityQuarters: number;
-  reservedQuarters: number;
-  remainingQuarters: number;
+  activeReservedQuarters: number;
+  activeRemainingQuarters: number;
+  totalReservedQuarters: number;
+  totalRemainingQuarters: number;
+  totalCapacityQuarters: number;
   estimatedQuarterWeight: number;
-  pricePerKg: number;
   slaughterDate: Date | null;
+  isCurrentPoolFull: boolean;
 };
 
 export async function getCurrentPool(): Promise<CurrentPool | null> {
   const db = getDb();
-  const [result] = await db
-    .select({
-      id: pools.id,
-      number: pools.number,
-      capacityQuarters: pools.capacityQuarters,
-      estimatedQuarterWeight: pools.estimatedQuarterWeight,
-      pricePerKg: pools.pricePerKg,
-      slaughterDate: pools.slaughterDate,
-      reservedQuarters:
-        sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
-    })
+  const [activePool] = await db
+    .select()
     .from(pools)
-    .leftJoin(orders, eq(orders.poolId, pools.id))
     .where(eq(pools.status, "ACTIVE"))
-    .groupBy(pools.id)
+    .orderBy(asc(pools.number))
     .limit(1);
 
-  if (!result) return null;
+  if (!activePool) return null;
+
+  const [totals, activeTotals] = await Promise.all([
+    db
+      .select({
+        reserved:
+          sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
+      })
+      .from(orders),
+    db
+      .select({
+        reserved:
+          sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
+      })
+      .from(orders)
+      .where(eq(orders.poolId, activePool.id)),
+  ]);
+
+  const totalReservedQuarters = Math.min(
+    TOTAL_QUARTERS,
+    totals[0]?.reserved ?? 0,
+  );
+  const activeReservedQuarters = activeTotals[0]?.reserved ?? 0;
 
   return {
-    ...result,
-    estimatedQuarterWeight: Number(result.estimatedQuarterWeight),
-    pricePerKg: Number(result.pricePerKg),
-    remainingQuarters: Math.max(
+    id: activePool.id,
+    number: activePool.number,
+    activeReservedQuarters,
+    activeRemainingQuarters: Math.max(
       0,
-      result.capacityQuarters - result.reservedQuarters,
+      activePool.capacityQuarters - activeReservedQuarters,
     ),
+    totalReservedQuarters,
+    totalRemainingQuarters: Math.max(
+      0,
+      TOTAL_QUARTERS - totalReservedQuarters,
+    ),
+    totalCapacityQuarters: TOTAL_QUARTERS,
+    estimatedQuarterWeight: Number(activePool.estimatedQuarterWeight),
+    slaughterDate: activePool.slaughterDate,
+    isCurrentPoolFull:
+      activeReservedQuarters >= activePool.capacityQuarters,
   };
 }
 
@@ -55,6 +91,7 @@ export async function getAdminData() {
         phone: orders.phone,
         locality: orders.locality,
         quarterCount: orders.quarterCount,
+        partType: orders.partType,
         status: orders.status,
         estimatedWeight: orders.estimatedWeightSnapshot,
         pricePerKg: orders.pricePerKgSnapshot,
@@ -112,10 +149,26 @@ export async function updateOrderStatus(
 
 export async function closeActivePool() {
   const db = getDb();
-  await db
-    .update(pools)
-    .set({ status: "CLOSED", closedAt: new Date() })
-    .where(eq(pools.status, "ACTIVE"));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(pools)
+      .set({ status: "CLOSED", closedAt: new Date() })
+      .where(eq(pools.status, "ACTIVE"));
+
+    const [nextPool] = await tx
+      .select({ id: pools.id })
+      .from(pools)
+      .where(eq(pools.status, "UPCOMING"))
+      .orderBy(asc(pools.number))
+      .limit(1);
+
+    if (nextPool) {
+      await tx
+        .update(pools)
+        .set({ status: "ACTIVE", closedAt: null })
+        .where(eq(pools.id, nextPool.id));
+    }
+  });
 }
 
 export async function setActivePoolSlaughterDate(date: Date) {
@@ -133,10 +186,13 @@ export async function createPool(input: {
 }) {
   const db = getDb();
   await db.transaction(async (tx) => {
-    await tx
-      .update(pools)
-      .set({ status: "CLOSED", closedAt: new Date() })
-      .where(eq(pools.status, "ACTIVE"));
+    const [activePool] = await tx
+      .select({ id: pools.id })
+      .from(pools)
+      .where(eq(pools.status, "ACTIVE"))
+      .limit(1);
+
+    if (activePool) throw new Error("Сначала закройте текущий пул");
 
     const [lastPool] = await tx
       .select({ number: pools.number })
@@ -144,15 +200,28 @@ export async function createPool(input: {
       .orderBy(desc(pools.number))
       .limit(1);
 
-    if ((lastPool?.number ?? 0) >= 3) {
+    if ((lastPool?.number ?? 0) >= TOTAL_HEADS) {
       throw new Error("Можно создать не более трёх пулов");
     }
 
     await tx.insert(pools).values({
       number: (lastPool?.number ?? 0) + 1,
+      status: "ACTIVE",
       capacityQuarters: input.capacityQuarters,
       estimatedQuarterWeight: String(input.estimatedQuarterWeight),
       pricePerKg: String(input.pricePerKg),
     });
   });
+}
+
+export function toPartType(value: "front" | "back" | "any"): PartType {
+  return value === "front" ? "FRONT" : value === "back" ? "BACK" : "ANY";
+}
+
+export function partTypeLabel(type: PartType) {
+  return type === "FRONT"
+    ? "Передняя"
+    : type === "BACK"
+      ? "Задняя"
+      : "Любая";
 }

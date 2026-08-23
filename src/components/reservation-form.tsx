@@ -3,6 +3,36 @@
 import { FormEvent, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 
+export type PartChoice = "front" | "back" | "any";
+
+const PART_PRICES: Record<PartChoice, number> = {
+  front: 530,
+  back: 570,
+  any: 550,
+};
+
+const PART_OPTIONS: Array<{
+  value: PartChoice;
+  title: string;
+  details: string;
+}> = [
+  {
+    value: "front",
+    title: "Передняя четверть",
+    details: "~45–55 кг: лопатка, шея, грудинка, рёбра",
+  },
+  {
+    value: "back",
+    title: "Задняя четверть",
+    details: "~45–55 кг: тазобедренная часть, вырезка, край",
+  },
+  {
+    value: "any",
+    title: "Не важно / любая часть",
+    details: "Соберём честно из доступных четвертей",
+  },
+];
+
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "").replace(/^8/, "7").slice(0, 11);
   const normalized = digits.startsWith("7") ? digits.slice(1) : digits;
@@ -23,14 +53,27 @@ function formatPhone(value: string) {
 }
 
 export function ReservationForm({
-  maxQuarters,
+  currentHeadNumber,
+  currentRemaining,
+  totalRemaining,
+  estimatedWeight,
+  selectedPart,
+  onPartChange,
 }: {
-  maxQuarters: number;
+  currentHeadNumber: number;
+  currentRemaining: number;
+  totalRemaining: number;
+  estimatedWeight: number;
+  selectedPart: PartChoice;
+  onPartChange: (value: PartChoice) => void;
 }) {
   const [phone, setPhone] = useState("+7");
   const [pending, setPending] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<"booked" | "waitlist" | null>(null);
   const [error, setError] = useState("");
+  const waitlist = currentRemaining < 1 && totalRemaining > 0;
+  const maxQuarters = Math.min(4, waitlist ? totalRemaining : currentRemaining);
+  const pricePerKg = PART_PRICES[selectedPart];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,17 +89,22 @@ export function ReservationForm({
         phone,
         locality: form.get("locality"),
         quarterCount: form.get("quarterCount"),
+        part_type: selectedPart,
+        selectedPrice: pricePerKg,
         website: form.get("website"),
       }),
     });
-    const data = (await response.json()) as { error?: string };
+    const data = (await response.json()) as {
+      error?: string;
+      waitlist?: boolean;
+    };
 
     setPending(false);
     if (!response.ok) {
       setError(data.error ?? "Не удалось отправить заявку");
       return;
     }
-    setSuccess(true);
+    setSuccess(data.waitlist ? "waitlist" : "booked");
   }
 
   if (success) {
@@ -64,13 +112,22 @@ export function ReservationForm({
       <div className="rounded-3xl bg-[#f2eadc] p-7 text-center sm:p-10">
         <CheckCircle2 className="mx-auto mb-4 size-12 text-[#47733d]" />
         <h3 className="font-serif text-3xl font-semibold text-[#241f18]">
-          Бронь принята
+          {success === "waitlist" ? "Вы в листе ожидания" : "Бронь принята"}
         </h3>
         <p className="mx-auto mt-3 max-w-md text-[#675e51]">
-          Мы позвоним, чтобы подтвердить заказ, и ещё раз свяжемся за три дня до
-          забоя. Предоплата не нужна.
+          {success === "waitlist"
+            ? "Место на следующую тушу закреплено. Мы позвоним, когда откроем следующую партию. Предоплата не нужна."
+            : "Мы позвоним, чтобы подтвердить заказ, и ещё раз свяжемся за три дня до забоя. Предоплата не нужна."}
         </p>
       </div>
+    );
+  }
+
+  if (totalRemaining < 1) {
+    return (
+      <p className="py-10 text-center text-[#675e51]">
+        Все 12 четвертей уже забронированы.
+      </p>
     );
   }
 
@@ -100,7 +157,7 @@ export function ReservationForm({
           className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
         />
       </label>
-      <label className="grid gap-2 text-sm font-medium">
+      <label className="grid gap-2 text-sm font-medium sm:col-span-2">
         Населённый пункт
         <input
           name="locality"
@@ -111,7 +168,42 @@ export function ReservationForm({
           className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
         />
       </label>
-      <label className="grid gap-2 text-sm font-medium">
+
+      <fieldset className="grid gap-3 sm:col-span-2">
+        <legend className="text-sm font-medium">Часть туши</legend>
+        {PART_OPTIONS.map((option) => (
+          <label
+            key={option.value}
+            className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${
+              selectedPart === option.value
+                ? "border-[#47733d] bg-[#edf4e9]"
+                : "border-[#d8cdbd] bg-white"
+            }`}
+          >
+            <input
+              type="radio"
+              name="part_type"
+              value={option.value}
+              checked={selectedPart === option.value}
+              onChange={() => onPartChange(option.value)}
+              className="mt-1"
+            />
+            <span>
+              <b className="block">{option.title}</b>
+              <small className="text-[#71685b]">{option.details}</small>
+              <small className="mt-1 block font-semibold text-[#9f2f24]">
+                {PART_PRICES[option.value]} ₽/кг · ~
+                {Math.round(
+                  estimatedWeight * PART_PRICES[option.value],
+                ).toLocaleString("ru-RU")}{" "}
+                ₽
+              </small>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
+      <label className="grid gap-2 text-sm font-medium sm:col-span-2">
         Количество четвертей
         <select
           name="quarterCount"
@@ -145,13 +237,26 @@ export function ReservationForm({
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#9f2f24] px-6 font-semibold text-white transition hover:bg-[#85261d] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending && <LoaderCircle className="size-5 animate-spin" />}
-          {pending ? "Сохраняем бронь…" : "Забронировать без предоплаты"}
+          {pending
+            ? "Сохраняем бронь…"
+            : waitlist
+              ? "Записаться в лист ожидания на следующую тушу"
+              : "Забронировать без предоплаты"}
         </button>
+        {waitlist && (
+          <p className="mt-3 text-sm leading-6 text-[#675e51]">
+            {currentHeadNumber === 1
+              ? "Первая туша почти полностью забронирована. Оставляя заявку сейчас, вы гарантированно бронируете место во второй партии. Никакой предоплаты."
+              : `Туша №${currentHeadNumber} почти полностью забронирована. Оставляя заявку сейчас, вы гарантированно бронируете место в следующей партии. Никакой предоплаты.`}
+          </p>
+        )}
         <p className="mt-3 text-center text-xs leading-5 text-[#746b5e]">
           Нажимая кнопку, вы соглашаетесь на обработку персональных данных.
-          Оплата только после получения.
+          Оплата только после получения. Точная сумма — по фактическому весу.
         </p>
       </div>
     </form>
   );
 }
+
+export { PART_PRICES };

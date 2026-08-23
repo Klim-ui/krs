@@ -10,7 +10,7 @@ import {
 import { redirect } from "next/navigation";
 import { StatusSelect } from "@/components/status-select";
 import { isAuthenticated } from "@/lib/auth";
-import { getAdminData } from "@/lib/orders";
+import { getAdminData, partTypeLabel } from "@/lib/orders";
 import {
   addPool,
   closePool,
@@ -143,6 +143,7 @@ export default async function AdminPage() {
                   <th className="px-5 py-3 font-semibold">Телефон</th>
                   <th className="px-5 py-3 font-semibold">Откуда</th>
                   <th className="px-5 py-3 font-semibold">Пул / четверти</th>
+                  <th className="px-5 py-3 font-semibold">Часть</th>
                   <th className="px-5 py-3 font-semibold">Дата</th>
                   <th className="px-5 py-3 font-semibold">Статус</th>
                 </tr>
@@ -163,6 +164,7 @@ export default async function AdminPage() {
                     <td className="px-5 py-4">
                       №{order.poolNumber} / {order.quarterCount}
                     </td>
+                    <td className="px-5 py-4">{partTypeLabel(order.partType)}</td>
                     <td className="px-5 py-4 text-[#71685b]">
                       {order.createdAt.toLocaleString("ru-RU", {
                         day: "2-digit",
@@ -180,7 +182,7 @@ export default async function AdminPage() {
                 {data.orders.length === 0 && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="px-5 py-14 text-center text-[#71685b]"
                     >
                       Заявок пока нет

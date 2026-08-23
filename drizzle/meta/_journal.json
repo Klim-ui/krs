@@ -15,6 +15,13 @@
       "when": 1787478663504,
       "tag": "0001_sell-by-quarters",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787497946271,
+      "tag": "0002_part-types-and-upcoming",
+      "breakpoints": true
     }
   ]
 }

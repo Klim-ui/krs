@@ -4,6 +4,8 @@ type ReservationMessage = {
   locality: string;
   quarterCount: number;
   poolNumber: number;
+  partLabel: string;
+  waitlist: boolean;
 };
 
 export async function sendReservationNotification(order: ReservationMessage) {
@@ -15,13 +17,16 @@ export async function sendReservationNotification(order: ReservationMessage) {
   if (!token || (!userId && !chatId)) return;
 
   const text = [
-    "🥩 Новая бронь мяса",
+    order.waitlist
+      ? "🔥 Лист ожидания на следующую тушу!"
+      : "🔥 Новая бронь говядины!",
     "",
-    `Партия: №${order.poolNumber}`,
-    `Имя: ${order.name}`,
-    `Телефон: ${order.phone}`,
-    `Населённый пункт: ${order.locality}`,
-    `Заказ: ${order.quarterCount} четверть туши`,
+    `👤 Имя: ${order.name}`,
+    `📞 Телефон: ${order.phone}`,
+    `🏡 Село: ${order.locality}`,
+    `🥩 Часть: ${order.partLabel}`,
+    `📦 Объем: ${order.quarterCount} четв.`,
+    `🥩 Туша №${order.poolNumber}`,
   ].join("\n");
 
   const url = new URL("https://platform-api2.max.ru/messages");
