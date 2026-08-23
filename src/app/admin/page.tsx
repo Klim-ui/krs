@@ -24,17 +24,20 @@ export default async function AdminPage() {
   if (!(await isAuthenticated())) redirect("/admin/login");
   const data = await getAdminData();
   const activePool = data.pools.find((pool) => pool.status === "ACTIVE");
-  const activeReservedBoxes = activePool
+  const activeReservedQuarters = activePool
     ? data.orders
         .filter(
           (order) =>
             order.poolNumber === activePool.number &&
             order.status !== "REJECTED",
         )
-        .reduce((sum, order) => sum + order.boxCount, 0)
+        .reduce((sum, order) => sum + order.quarterCount, 0)
     : 0;
-  const freeBoxes = activePool
-    ? Math.max(0, activePool.capacityBoxes - activeReservedBoxes)
+  const freeQuarters = activePool
+    ? Math.max(
+        0,
+        activePool.capacityQuarters - activeReservedQuarters,
+      )
     : 0;
 
   return (
@@ -103,7 +106,7 @@ export default async function AdminPage() {
           <Stat
             icon={Box}
             label="Свободно в текущем пуле"
-            value={activePool ? `${freeBoxes} коробок` : "Пул закрыт"}
+            value={activePool ? `${freeQuarters} четверти` : "Пул закрыт"}
           />
           <Stat
             icon={Scale}
@@ -139,7 +142,7 @@ export default async function AdminPage() {
                   <th className="px-5 py-3 font-semibold">Клиент</th>
                   <th className="px-5 py-3 font-semibold">Телефон</th>
                   <th className="px-5 py-3 font-semibold">Откуда</th>
-                  <th className="px-5 py-3 font-semibold">Пул / коробки</th>
+                  <th className="px-5 py-3 font-semibold">Пул / четверти</th>
                   <th className="px-5 py-3 font-semibold">Дата</th>
                   <th className="px-5 py-3 font-semibold">Статус</th>
                 </tr>
@@ -158,7 +161,7 @@ export default async function AdminPage() {
                     </td>
                     <td className="px-5 py-4">{order.locality}</td>
                     <td className="px-5 py-4">
-                      №{order.poolNumber} / {order.boxCount}
+                      №{order.poolNumber} / {order.quarterCount}
                     </td>
                     <td className="px-5 py-4 text-[#71685b]">
                       {order.createdAt.toLocaleString("ru-RU", {
@@ -209,20 +212,20 @@ export default async function AdminPage() {
               className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-[1fr_1fr_1fr_auto]"
             >
               <Field
-                name="capacityBoxes"
-                label="Количество коробок"
-                defaultValue="15"
+                name="capacityQuarters"
+                label="Количество четвертей"
+                defaultValue="4"
               />
               <Field
-                name="estimatedBoxWeight"
-                label="Вес коробки, кг"
-                defaultValue="13"
+                name="estimatedQuarterWeight"
+                label="Вес четверти, кг"
+                defaultValue="50"
                 step="0.1"
               />
               <Field
                 name="pricePerKg"
                 label="Цена за кг, ₽"
-                defaultValue="850"
+                defaultValue="550"
                 step="1"
               />
               <button className="h-12 self-end rounded-xl bg-[#47733d] px-6 font-semibold text-white hover:bg-[#395f31]">

@@ -22,7 +22,11 @@ function formatPhone(value: string) {
   return result;
 }
 
-export function ReservationForm({ maxBoxes }: { maxBoxes: number }) {
+export function ReservationForm({
+  maxQuarters,
+}: {
+  maxQuarters: number;
+}) {
   const [phone, setPhone] = useState("+7");
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -41,7 +45,7 @@ export function ReservationForm({ maxBoxes }: { maxBoxes: number }) {
         name: form.get("name"),
         phone,
         locality: form.get("locality"),
-        boxCount: form.get("boxCount"),
+        quarterCount: form.get("quarterCount"),
         website: form.get("website"),
       }),
     });
@@ -108,14 +112,14 @@ export function ReservationForm({ maxBoxes }: { maxBoxes: number }) {
         />
       </label>
       <label className="grid gap-2 text-sm font-medium">
-        Количество коробок
+        Количество четвертей
         <select
-          name="boxCount"
+          name="quarterCount"
           className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
         >
-          {Array.from({ length: Math.min(5, maxBoxes) }, (_, index) => (
+          {Array.from({ length: maxQuarters }, (_, index) => (
             <option key={index + 1} value={index + 1}>
-              {index + 1}
+              {index + 1} {index === 0 ? "четверть" : "четверти"}
             </option>
           ))}
         </select>
@@ -137,7 +141,7 @@ export function ReservationForm({ maxBoxes }: { maxBoxes: number }) {
 
       <div className="sm:col-span-2">
         <button
-          disabled={pending || maxBoxes < 1}
+          disabled={pending || maxQuarters < 1}
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#9f2f24] px-6 font-semibold text-white transition hover:bg-[#85261d] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending && <LoaderCircle className="size-5 animate-spin" />}

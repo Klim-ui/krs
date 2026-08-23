@@ -36,8 +36,8 @@ export async function changeOrderStatus(formData: FormData) {
 export async function addPool(formData: FormData) {
   await requireAdmin();
   const input = poolSchema.parse({
-    capacityBoxes: formData.get("capacityBoxes"),
-    estimatedBoxWeight: formData.get("estimatedBoxWeight"),
+    capacityQuarters: formData.get("capacityQuarters"),
+    estimatedQuarterWeight: formData.get("estimatedQuarterWeight"),
     pricePerKg: formData.get("pricePerKg"),
   });
   await createPool(input);

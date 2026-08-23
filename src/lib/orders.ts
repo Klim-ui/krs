@@ -1,14 +1,14 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
 
 export type CurrentPool = {
   id: string;
   number: number;
-  capacityBoxes: number;
-  reservedBoxes: number;
-  remainingBoxes: number;
-  estimatedBoxWeight: number;
+  capacityQuarters: number;
+  reservedQuarters: number;
+  remainingQuarters: number;
+  estimatedQuarterWeight: number;
   pricePerKg: number;
   slaughterDate: Date | null;
 };
@@ -19,12 +19,12 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
     .select({
       id: pools.id,
       number: pools.number,
-      capacityBoxes: pools.capacityBoxes,
-      estimatedBoxWeight: pools.estimatedBoxWeight,
+      capacityQuarters: pools.capacityQuarters,
+      estimatedQuarterWeight: pools.estimatedQuarterWeight,
       pricePerKg: pools.pricePerKg,
       slaughterDate: pools.slaughterDate,
-      reservedBoxes:
-        sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.boxCount} else 0 end), 0)::int`,
+      reservedQuarters:
+        sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
     })
     .from(pools)
     .leftJoin(orders, eq(orders.poolId, pools.id))
@@ -36,9 +36,12 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
 
   return {
     ...result,
-    estimatedBoxWeight: Number(result.estimatedBoxWeight),
+    estimatedQuarterWeight: Number(result.estimatedQuarterWeight),
     pricePerKg: Number(result.pricePerKg),
-    remainingBoxes: Math.max(0, result.capacityBoxes - result.reservedBoxes),
+    remainingQuarters: Math.max(
+      0,
+      result.capacityQuarters - result.reservedQuarters,
+    ),
   };
 }
 
@@ -51,7 +54,7 @@ export async function getAdminData() {
         name: orders.name,
         phone: orders.phone,
         locality: orders.locality,
-        boxCount: orders.boxCount,
+        quarterCount: orders.quarterCount,
         status: orders.status,
         estimatedWeight: orders.estimatedWeightSnapshot,
         pricePerKg: orders.pricePerKgSnapshot,
@@ -66,7 +69,7 @@ export async function getAdminData() {
         id: pools.id,
         number: pools.number,
         status: pools.status,
-        capacityBoxes: pools.capacityBoxes,
+        capacityQuarters: pools.capacityQuarters,
         slaughterDate: pools.slaughterDate,
         createdAt: pools.createdAt,
       })
@@ -75,7 +78,10 @@ export async function getAdminData() {
   ]);
 
   const activeOrders = allOrders.filter((order) => order.status !== "REJECTED");
-  const totalBoxes = activeOrders.reduce((sum, order) => sum + order.boxCount, 0);
+  const totalQuarters = activeOrders.reduce(
+    (sum, order) => sum + order.quarterCount,
+    0,
+  );
   const totalWeight = activeOrders.reduce(
     (sum, order) => sum + Number(order.estimatedWeight),
     0,
@@ -89,7 +95,7 @@ export async function getAdminData() {
   return {
     orders: allOrders,
     pools: allPools,
-    stats: { totalBoxes, totalWeight, potentialRevenue },
+    stats: { totalQuarters, totalWeight, potentialRevenue },
   };
 }
 
@@ -121,8 +127,8 @@ export async function setActivePoolSlaughterDate(date: Date) {
 }
 
 export async function createPool(input: {
-  capacityBoxes: number;
-  estimatedBoxWeight: number;
+  capacityQuarters: number;
+  estimatedQuarterWeight: number;
   pricePerKg: number;
 }) {
   const db = getDb();
@@ -144,27 +150,9 @@ export async function createPool(input: {
 
     await tx.insert(pools).values({
       number: (lastPool?.number ?? 0) + 1,
-      capacityBoxes: input.capacityBoxes,
-      estimatedBoxWeight: String(input.estimatedBoxWeight),
+      capacityQuarters: input.capacityQuarters,
+      estimatedQuarterWeight: String(input.estimatedQuarterWeight),
       pricePerKg: String(input.pricePerKg),
     });
   });
-}
-
-export async function reservationExists(phone: string) {
-  const db = getDb();
-  const [existing] = await db
-    .select({ id: orders.id })
-    .from(orders)
-    .innerJoin(pools, eq(orders.poolId, pools.id))
-    .where(
-      and(
-        eq(orders.phone, phone),
-        ne(orders.status, "REJECTED"),
-        eq(pools.status, "ACTIVE"),
-      ),
-    )
-    .limit(1);
-
-  return Boolean(existing);
 }

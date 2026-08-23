@@ -12,20 +12,21 @@ import { getCurrentPool } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
 
-const boxContents = [
-  ["Мякоть", "5–6 кг", "Для гуляша, фарша и запекания"],
-  ["Стейки", "2–3 кг", "Нарезка из лучших частей"],
-  ["Рёбра", "2 кг", "Для духовки, гриля или казана"],
-  ["Суповой набор", "2 кг", "Наваристые бульоны и холодец"],
+const quarterContents = [
+  ["Передняя четверть", "~45–55 кг", "Лопатка, шея, грудинка, рёбра и голяшка"],
+  ["Задняя четверть", "~45–55 кг", "Тазобедренная часть, вырезка, край и голяшка"],
 ];
 
 export default async function Home() {
   const pool = await getCurrentPool();
   const progress = pool
-    ? Math.min(100, Math.round((pool.reservedBoxes / pool.capacityBoxes) * 100))
+    ? Math.min(
+        100,
+        Math.round((pool.reservedQuarters / pool.capacityQuarters) * 100),
+      )
     : 0;
   const estimatedPrice = pool
-    ? Math.round(pool.estimatedBoxWeight * pool.pricePerKg)
+    ? Math.round(pool.estimatedQuarterWeight * pool.pricePerKg)
     : 0;
 
   return (
@@ -63,9 +64,9 @@ export default async function Home() {
                 вашему столу
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-[#635b50]">
-                Герефорды на зерне и сене. Собираем общий заказ на бычка,
-                формируем семейные коробки по 12–13 кг и доставляем после забоя.
-                Без предоплаты.
+                Молодые герефорды на зерне и сене. Продаём четвертинами туши,
+                доставляем после забоя и ветеринарной экспертизы. Без
+                предоплаты.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
@@ -75,10 +76,10 @@ export default async function Home() {
                   Забронировать набор
                 </a>
                 <a
-                  href="#box"
+                  href="#quarters"
                   className="flex h-14 items-center justify-center rounded-xl bg-white/70 px-7 font-semibold text-[#302a22] transition hover:bg-white"
                 >
-                  Что входит в коробку
+                  Что входит в четверть
                 </a>
               </div>
             </div>
@@ -92,7 +93,7 @@ export default async function Home() {
                         Сейчас собираем
                       </p>
                       <h2 className="mt-1 font-serif text-3xl font-semibold">
-                        Бычок №{pool.number}
+                        Партия №{pool.number}
                       </h2>
                     </div>
                     <span className="rounded-full bg-[#edf4e9] px-3 py-1.5 text-sm font-semibold text-[#47733d]">
@@ -107,19 +108,20 @@ export default async function Home() {
                   </div>
                   <div className="mt-3 flex justify-between text-sm">
                     <span className="font-semibold">
-                      Собрано {pool.reservedBoxes} из {pool.capacityBoxes}
+                      Забронировано {pool.reservedQuarters} из{" "}
+                      {pool.capacityQuarters}
                     </span>
                     <span className="text-[#71685b]">
-                      Осталось {pool.remainingBoxes}
+                      Осталось {pool.remainingQuarters}
                     </span>
                   </div>
                   <div className="mt-7 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl bg-[#f4eee3] p-4">
                       <PackageCheck className="mb-2 size-5 text-[#9f2f24]" />
                       <b className="block text-xl">
-                        ~{pool.estimatedBoxWeight} кг
+                        ~{pool.estimatedQuarterWeight} кг
                       </b>
-                      <small className="text-[#71685b]">в одной коробке</small>
+                      <small className="text-[#71685b]">одна четверть туши</small>
                     </div>
                     <div className="rounded-2xl bg-[#f4eee3] p-4">
                       <CalendarDays className="mb-2 size-5 text-[#9f2f24]" />
@@ -148,22 +150,22 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="box" className="bg-white py-20 sm:py-28">
+      <section id="quarters" className="bg-white py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#9f2f24]">
-              Семейный набор
+              Продажа четвертинами
             </p>
             <h2 className="mt-3 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
-              Всё нужное — в одной коробке
+              Четверть молодой говяжьей туши
             </h2>
             <p className="mt-4 text-lg text-[#6b6256]">
-              Части распределяем честно между всеми участниками пула.
-              Фактический вес может немного отличаться.
+              Цена единая — 550 ₽ за килограмм. Точный вес и сумма определяются
+              после разделки на поверенных весах.
             </p>
           </div>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {boxContents.map(([title, weight, description]) => (
+          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+            {quarterContents.map(([title, weight, description]) => (
               <article
                 key={title}
                 className="rounded-2xl border border-[#e5dccf] p-6 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-[#66543a]/8"
@@ -188,7 +190,7 @@ export default async function Home() {
                 </p>
                 <p className="mt-1 text-2xl font-semibold">
                   Ориентировочно {estimatedPrice.toLocaleString("ru-RU")} ₽ за
-                  коробку
+                  четверть
                 </p>
               </div>
               <span className="text-sm text-white/60">
@@ -244,7 +246,7 @@ export default async function Home() {
               Бронь без оплаты
             </p>
             <h2 className="mt-3 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
-              Оставьте коробку за собой
+              Забронируйте четверть туши
             </h2>
             <p className="mt-5 text-lg leading-8 text-[#675e51]">
               Заполните форму. Мы позвоним, уточним адрес и ответим на вопросы.
@@ -252,8 +254,8 @@ export default async function Home() {
             </p>
           </div>
           <div className="rounded-3xl bg-white p-6 shadow-xl shadow-[#66543a]/8 sm:p-9">
-            {pool && pool.remainingBoxes > 0 ? (
-              <ReservationForm maxBoxes={pool.remainingBoxes} />
+            {pool && pool.remainingQuarters > 0 ? (
+              <ReservationForm maxQuarters={pool.remainingQuarters} />
             ) : (
               <p className="py-10 text-center text-[#675e51]">
                 Приём броней временно закрыт.

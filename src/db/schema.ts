@@ -25,13 +25,13 @@ export const pools = pgTable("pools", {
   id: uuid("id").defaultRandom().primaryKey(),
   number: integer("number").notNull().unique(),
   status: poolStatus("status").notNull().default("ACTIVE"),
-  capacityBoxes: integer("capacity_boxes").notNull(),
-  estimatedBoxWeight: numeric("estimated_box_weight", {
+  capacityQuarters: integer("capacity_boxes").notNull(),
+  estimatedQuarterWeight: numeric("estimated_box_weight", {
     precision: 5,
     scale: 2,
   })
     .notNull()
-    .default("13"),
+    .default("50"),
   pricePerKg: numeric("price_per_kg", { precision: 10, scale: 2 }).notNull(),
   slaughterDate: timestamp("slaughter_date", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -48,7 +48,7 @@ export const orders = pgTable("orders", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   locality: text("locality").notNull(),
-  boxCount: integer("box_count").notNull(),
+  quarterCount: integer("box_count").notNull(),
   status: orderStatus("status").notNull().default("NEW"),
   pricePerKgSnapshot: numeric("price_per_kg_snapshot", {
     precision: 10,

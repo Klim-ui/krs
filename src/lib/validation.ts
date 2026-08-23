@@ -13,12 +13,12 @@ export const orderSchema = z.object({
     )
     .transform((value) => `+7${value.replace(/^\+?7|^8/, "")}`),
   locality: z.string().trim().min(2, "Укажите населённый пункт").max(100),
-  boxCount: z.coerce.number().int().min(1).max(5),
+  quarterCount: z.coerce.number().int().min(1).max(4),
   website: z.string().max(0).optional().default(""),
 });
 
 export const poolSchema = z.object({
-  capacityBoxes: z.coerce.number().int().min(1).max(100),
-  estimatedBoxWeight: z.coerce.number().min(1).max(100),
+  capacityQuarters: z.coerce.number().int().min(1).max(4),
+  estimatedQuarterWeight: z.coerce.number().min(20).max(100),
   pricePerKg: z.coerce.number().min(1).max(100_000),
 });

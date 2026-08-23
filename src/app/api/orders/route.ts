@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
-import { sendReservationNotification } from "@/lib/telegram";
+import { sendReservationNotification } from "@/lib/max";
 import { orderSchema } from "@/lib/validation";
 
 class CapacityError extends Error {}
@@ -37,17 +37,18 @@ export async function POST(request: Request) {
 
       const [reserved] = await tx
         .select({
-          boxes:
-            sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.boxCount} else 0 end), 0)::int`,
+          quarters:
+            sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
         })
         .from(orders)
         .where(eq(orders.poolId, pool.id));
 
-      const remaining = pool.capacityBoxes - (reserved?.boxes ?? 0);
-      if (parsed.data.boxCount > remaining) {
+      const remaining =
+        pool.capacityQuarters - (reserved?.quarters ?? 0);
+      if (parsed.data.quarterCount > remaining) {
         throw new CapacityError(
           remaining > 0
-            ? `Осталось только ${remaining} коробок`
+            ? `Осталось только ${remaining} четверти`
             : "Этот пул уже заполнен",
         );
       }
@@ -59,10 +60,10 @@ export async function POST(request: Request) {
           name: parsed.data.name,
           phone: parsed.data.phone,
           locality: parsed.data.locality,
-          boxCount: parsed.data.boxCount,
+          quarterCount: parsed.data.quarterCount,
           pricePerKgSnapshot: pool.pricePerKg,
           estimatedWeightSnapshot: String(
-            Number(pool.estimatedBoxWeight) * parsed.data.boxCount,
+            Number(pool.estimatedQuarterWeight) * parsed.data.quarterCount,
           ),
         })
         .returning({ id: orders.id });
@@ -74,9 +75,9 @@ export async function POST(request: Request) {
       name: parsed.data.name,
       phone: parsed.data.phone,
       locality: parsed.data.locality,
-      boxCount: parsed.data.boxCount,
+      quarterCount: parsed.data.quarterCount,
       poolNumber: result.poolNumber,
-    }).catch((error) => console.error("Telegram notification failed", error));
+    }).catch((error) => console.error("MAX notification failed", error));
 
     return NextResponse.json({ ok: true, orderId: result.order.id });
   } catch (error) {

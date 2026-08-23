@@ -12,14 +12,14 @@ export async function GET() {
 
   const { orders } = await getAdminData();
   const rows = [
-    ["Дата", "Имя", "Телефон", "Населённый пункт", "Пул", "Коробок", "Статус"],
+    ["Дата", "Имя", "Телефон", "Населённый пункт", "Пул", "Четвертей", "Статус"],
     ...orders.map((order) => [
       order.createdAt.toLocaleString("ru-RU"),
       order.name,
       order.phone,
       order.locality,
       order.poolNumber,
-      order.boxCount,
+      order.quarterCount,
       order.status,
     ]),
   ];
