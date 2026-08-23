@@ -6,7 +6,7 @@
   },
   "deploy": {
     "preDeployCommand": "npm run db:migrate",
-    "startCommand": "npm run start",
+    "startCommand": "NODE_EXTRA_CA_CERTS=/app/certs/russian_trusted_root_ca_pem.crt npm run start",
     "healthcheckPath": "/",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
