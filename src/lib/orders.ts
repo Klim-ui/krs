@@ -4,7 +4,11 @@ import { orders, pools } from "@/db/schema";
 
 export const TOTAL_HEADS = 3;
 export const QUARTERS_PER_HEAD = 4;
-export const TOTAL_QUARTERS = TOTAL_HEADS * QUARTERS_PER_HEAD;
+export const BACKS_PER_HEAD = 2;
+export const PACKS_PER_HEAD = 8;
+export const FRONT_PACK_KG = 12;
+export const TOTAL_BACKS = TOTAL_HEADS * BACKS_PER_HEAD;
+export const TOTAL_PACKS = TOTAL_HEADS * PACKS_PER_HEAD;
 
 export const PART_PRICES = {
   FRONT: 530,
@@ -14,12 +18,36 @@ export const PART_PRICES = {
 
 export type PartType = keyof typeof PART_PRICES;
 
+type SlotRow = { poolId?: string; partType: PartType; units: number };
+
+export function slotsUsed(rows: SlotRow[], kind: "FRONT" | "BACK") {
+  return rows.reduce((sum, row) => {
+    if (kind === "FRONT") {
+      return sum + (row.partType === "FRONT" ? row.units : 0);
+    }
+    return (
+      sum + (row.partType === "BACK" || row.partType === "ANY" ? row.units : 0)
+    );
+  }, 0);
+}
+
+export function remainingSlots(rows: SlotRow[], kind: "FRONT" | "BACK") {
+  const cap = kind === "FRONT" ? PACKS_PER_HEAD : BACKS_PER_HEAD;
+  return Math.max(0, cap - slotsUsed(rows, kind));
+}
+
 export type CurrentPool = {
   id: string;
   number: number;
   status: "ACTIVE" | "UPCOMING";
   activeReservedQuarters: number;
   activeRemainingQuarters: number;
+  remainingBacks: number;
+  remainingPacks: number;
+  totalReservedBacks: number;
+  totalReservedPacks: number;
+  totalRemainingBacks: number;
+  totalRemainingPacks: number;
   totalReservedQuarters: number;
   totalRemainingQuarters: number;
   totalCapacityQuarters: number;
@@ -49,47 +77,52 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
   const pool = activePool ?? upcomingPool;
   if (!pool) return null;
 
-  const [totals, activeTotals] = await Promise.all([
-    db
-      .select({
-        reserved:
-          sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
-      })
-      .from(orders),
-    db
-      .select({
-        reserved:
-          sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
-      })
-      .from(orders)
-      .where(eq(orders.poolId, pool.id)),
-  ]);
+  const usage = await db
+    .select({
+      poolId: orders.poolId,
+      partType: orders.partType,
+      units:
+        sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
+    })
+    .from(orders)
+    .groupBy(orders.poolId, orders.partType);
 
-  const totalReservedQuarters = Math.min(
-    TOTAL_QUARTERS,
-    totals[0]?.reserved ?? 0,
-  );
-  const activeReservedQuarters = activeTotals[0]?.reserved ?? 0;
+  const allRows = usage.map((row) => ({
+    partType: row.partType,
+    units: row.units,
+  }));
+  const poolRows = usage
+    .filter((row) => row.poolId === pool.id)
+    .map((row) => ({ partType: row.partType, units: row.units }));
+
+  const remainingBacks = remainingSlots(poolRows, "BACK");
+  const remainingPacks = remainingSlots(poolRows, "FRONT");
+  const totalReservedBacks = slotsUsed(allRows, "BACK");
+  const totalReservedPacks = slotsUsed(allRows, "FRONT");
+  const activeRemainingQuarters = remainingBacks + remainingPacks;
+  const totalRemainingBacks = Math.max(0, TOTAL_BACKS - totalReservedBacks);
+  const totalRemainingPacks = Math.max(0, TOTAL_PACKS - totalReservedPacks);
   const status = pool.status === "UPCOMING" ? "UPCOMING" : "ACTIVE";
 
   return {
     id: pool.id,
     number: pool.number,
     status,
-    activeReservedQuarters,
-    activeRemainingQuarters: Math.max(
-      0,
-      pool.capacityQuarters - activeReservedQuarters,
-    ),
-    totalReservedQuarters,
-    totalRemainingQuarters: Math.max(
-      0,
-      TOTAL_QUARTERS - totalReservedQuarters,
-    ),
-    totalCapacityQuarters: TOTAL_QUARTERS,
+    activeReservedQuarters:
+      slotsUsed(poolRows, "BACK") + slotsUsed(poolRows, "FRONT"),
+    activeRemainingQuarters,
+    remainingBacks,
+    remainingPacks,
+    totalReservedBacks,
+    totalReservedPacks,
+    totalRemainingBacks,
+    totalRemainingPacks,
+    totalReservedQuarters: totalReservedBacks + totalReservedPacks,
+    totalRemainingQuarters: totalRemainingBacks + totalRemainingPacks,
+    totalCapacityQuarters: TOTAL_BACKS + TOTAL_PACKS,
     estimatedQuarterWeight: Number(pool.estimatedQuarterWeight),
     slaughterDate: pool.slaughterDate,
-    isCurrentPoolFull: activeReservedQuarters >= pool.capacityQuarters,
+    isCurrentPoolFull: activeRemainingQuarters < 1,
   };
 }
 
@@ -270,8 +303,8 @@ export function toPartType(value: "front" | "back" | "any"): PartType {
 
 export function partTypeLabel(type: PartType) {
   return type === "FRONT"
-    ? "Передняя"
+    ? "Пачка переда ~12 кг"
     : type === "BACK"
-      ? "Задняя"
-      : "Любая";
+      ? "Задняя четверть"
+      : "Четверть";
 }

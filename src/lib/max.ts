@@ -9,7 +9,7 @@ type ReservationMessage = {
 function buildMessage(order: ReservationMessage) {
   const quarters =
     order.quarterCount === 1
-      ? `${order.partLabel} четверть`
+      ? order.partLabel
       : `${order.quarterCount} × ${order.partLabel.toLowerCase()}`;
 
   return [

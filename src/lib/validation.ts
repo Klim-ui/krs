@@ -17,6 +17,14 @@ export const orderSchema = z.object({
   part_type: z.enum(["front", "back", "any"]),
   selectedPrice: z.coerce.number().optional(),
   website: z.string().max(0).optional().default(""),
+}).superRefine((data, ctx) => {
+  if (data.part_type === "back" && data.quarterCount > 2) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Заднюю четверть можно взять не больше двух за раз",
+      path: ["quarterCount"],
+    });
+  }
 });
 
 export const poolSchema = z.object({

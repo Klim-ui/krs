@@ -4,10 +4,12 @@ import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
 import { sendReservationNotification } from "@/lib/max";
 import {
+  FRONT_PACK_KG,
   PART_PRICES,
   QUARTERS_PER_HEAD,
   TOTAL_HEADS,
   partTypeLabel,
+  remainingSlots,
   toPartType,
 } from "@/lib/orders";
 import { orderSchema } from "@/lib/validation";
@@ -50,7 +52,8 @@ export async function POST(request: Request) {
       const reservations = await tx
         .select({
           poolId: orders.poolId,
-          quarters:
+          partType: orders.partType,
+          units:
             sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
         })
         .from(orders)
@@ -60,16 +63,15 @@ export async function POST(request: Request) {
             openPools.map((pool) => pool.id),
           ),
         )
-        .groupBy(orders.poolId);
+        .groupBy(orders.poolId, orders.partType);
 
-      const reservedByPool = new Map(
-        reservations.map((row) => [row.poolId, row.quarters]),
-      );
+      const kind = partType === "FRONT" ? "FRONT" : "BACK";
 
       let target = openPools.find((pool) => {
-        const remaining =
-          pool.capacityQuarters - (reservedByPool.get(pool.id) ?? 0);
-        return remaining >= parsed.data.quarterCount;
+        const rows = reservations
+          .filter((row) => row.poolId === pool.id)
+          .map((row) => ({ partType: row.partType, units: row.units }));
+        return remainingSlots(rows, kind) >= parsed.data.quarterCount;
       });
 
       if (!target) {
@@ -81,7 +83,9 @@ export async function POST(request: Request) {
         const nextNumber = (lastPool?.number ?? 0) + 1;
 
         if (nextNumber > TOTAL_HEADS) {
-          throw new CapacityError("Все 12 четвертей уже забронированы");
+          throw new CapacityError(
+            "Все задние четверти и пачки переда уже забронированы",
+          );
         }
 
         const [created] = await tx
@@ -115,7 +119,10 @@ export async function POST(request: Request) {
           partType,
           pricePerKgSnapshot: String(pricePerKg),
           estimatedWeightSnapshot: String(
-            Number(target.estimatedQuarterWeight) * parsed.data.quarterCount,
+            (partType === "FRONT"
+              ? FRONT_PACK_KG
+              : Number(target.estimatedQuarterWeight)) *
+              parsed.data.quarterCount,
           ),
         })
         .returning({ id: orders.id });

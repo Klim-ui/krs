@@ -3,12 +3,13 @@
 import { FormEvent, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 
-export type PartChoice = "front" | "back" | "any";
+export type PartChoice = "front" | "back";
+
+export const FRONT_PACK_KG = 12;
 
 const PART_PRICES: Record<PartChoice, number> = {
   front: 530,
   back: 570,
-  any: 550,
 };
 
 const PART_OPTIONS: Array<{
@@ -17,19 +18,14 @@ const PART_OPTIONS: Array<{
   details: string;
 }> = [
   {
-    value: "front",
-    title: "Передняя четверть",
-    details: "~45–55 кг: лопатка, шея, грудинка, рёбра",
-  },
-  {
     value: "back",
-    title: "Задняя четверть",
-    details: "~45–55 кг: тазобедренная часть, вырезка, край",
+    title: "Задняя четверть целиком",
+    details: "~45–55 кг: тазобедренная, вырезка, край, голяшка",
   },
   {
-    value: "any",
-    title: "Не важно / любая часть",
-    details: "Соберём честно из доступных четвертей",
+    value: "front",
+    title: "Пачка переда 10–15 кг",
+    details: "Считаем ~12 кг. Лопатка, шея, грудинка, рёбра, голяшка",
   },
 ];
 
@@ -54,16 +50,20 @@ function formatPhone(value: string) {
 
 export function ReservationForm({
   currentHeadNumber,
-  currentRemaining,
-  totalRemaining,
-  estimatedWeight,
+  remainingBacks,
+  remainingPacks,
+  totalRemainingBacks,
+  totalRemainingPacks,
+  estimatedQuarterWeight,
   selectedPart,
   onPartChange,
 }: {
   currentHeadNumber: number;
-  currentRemaining: number;
-  totalRemaining: number;
-  estimatedWeight: number;
+  remainingBacks: number;
+  remainingPacks: number;
+  totalRemainingBacks: number;
+  totalRemainingPacks: number;
+  estimatedQuarterWeight: number;
   selectedPart: PartChoice;
   onPartChange: (value: PartChoice) => void;
 }) {
@@ -71,8 +71,15 @@ export function ReservationForm({
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<"booked" | "waitlist" | null>(null);
   const [error, setError] = useState("");
+  const currentRemaining =
+    selectedPart === "front" ? remainingPacks : remainingBacks;
+  const totalRemaining =
+    selectedPart === "front" ? totalRemainingPacks : totalRemainingBacks;
   const waitlist = currentRemaining < 1 && totalRemaining > 0;
-  const maxQuarters = Math.min(4, waitlist ? totalRemaining : currentRemaining);
+  const maxUnits = Math.min(
+    selectedPart === "front" ? 4 : 2,
+    waitlist ? totalRemaining : currentRemaining,
+  );
   const pricePerKg = PART_PRICES[selectedPart];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -128,10 +135,10 @@ export function ReservationForm({
     );
   }
 
-  if (totalRemaining < 1) {
+  if (totalRemainingBacks < 1 && totalRemainingPacks < 1) {
     return (
       <p className="py-10 text-center text-[#675e51]">
-        Все 12 четвертей уже забронированы.
+        Все задние четверти и пачки переда уже забронированы.
       </p>
     );
   }
@@ -199,7 +206,9 @@ export function ReservationForm({
               <small className="mt-1 block font-semibold text-[#9f2f24]">
                 {PART_PRICES[option.value]} ₽/кг · ~
                 {Math.round(
-                  estimatedWeight * PART_PRICES[option.value],
+                  (option.value === "front"
+                    ? FRONT_PACK_KG
+                    : estimatedQuarterWeight) * PART_PRICES[option.value],
                 ).toLocaleString("ru-RU")}{" "}
                 ₽
               </small>
@@ -209,14 +218,21 @@ export function ReservationForm({
       </fieldset>
 
       <label className="grid gap-2 text-sm font-medium sm:col-span-2">
-        Количество четвертей
+        {selectedPart === "front" ? "Количество пачек" : "Количество четвертей"}
         <select
           name="quarterCount"
           className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
         >
-          {Array.from({ length: maxQuarters }, (_, index) => (
+          {Array.from({ length: Math.max(maxUnits, 0) }, (_, index) => (
             <option key={index + 1} value={index + 1}>
-              {index + 1} {index === 0 ? "четверть" : "четверти"}
+              {index + 1}{" "}
+              {selectedPart === "front"
+                ? index === 0
+                  ? "пачка ~12 кг"
+                  : "пачки"
+                : index === 0
+                  ? "четверть"
+                  : "четверти"}
             </option>
           ))}
         </select>
@@ -238,7 +254,7 @@ export function ReservationForm({
 
       <div className="sm:col-span-2">
         <button
-          disabled={pending || maxQuarters < 1}
+          disabled={pending || maxUnits < 1}
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#9f2f24] px-6 font-semibold text-white transition hover:bg-[#85261d] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending && <LoaderCircle className="size-5 animate-spin" />}

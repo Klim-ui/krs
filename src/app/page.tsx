@@ -10,7 +10,7 @@ import {
 import Image from "next/image";
 import { BookingSection } from "@/components/booking-section";
 import { StickyBookBar } from "@/components/sticky-book-bar";
-import { getCurrentPool } from "@/lib/orders";
+import { FRONT_PACK_KG, TOTAL_BACKS, TOTAL_PACKS, getCurrentPool } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -27,17 +27,25 @@ export default async function Home() {
 
   return (
     <main className="overflow-hidden pb-24 sm:pb-0">
-      <section className="relative bg-[#f4eee3]">
-        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(#7b6d59_0.7px,transparent_0.7px)] [background-size:18px_18px]" />
+      <section className="relative min-h-[100svh]">
+        <Image
+          src="/pasture.jpg"
+          alt="Тёлки на выпасе"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-[#1a1610]/62" />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:pb-24">
           <header className="flex items-center justify-between gap-3">
             <a href="#" className="flex items-center gap-3">
               <span className="grid size-10 place-items-center rounded-full bg-[#47733d] text-white">
                 <Beef className="size-5" />
               </span>
-              <span className="leading-tight">
+              <span className="leading-tight text-white">
                 <b className="block font-serif text-lg">Мясной Пул</b>
-                <small className="text-[#6e6558]">Таврическое</small>
+                <small className="text-white/70">Таврическое</small>
               </span>
             </a>
             <a
@@ -48,33 +56,33 @@ export default async function Home() {
             </a>
           </header>
 
-          <div className="grid items-center gap-10 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:pt-20">
+          <div className="grid items-center gap-10 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:pt-16">
             <div className="min-w-0">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/80 px-3.5 py-2 text-sm font-medium text-[#47733d] shadow-sm">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-sm font-medium text-white">
                 <MapPin className="size-4" />
                 Таврический район и Омск
               </div>
-              <h1 className="max-w-3xl font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-[#251f18] sm:text-6xl lg:text-7xl">
-                Четверть туши от фермера.{" "}
-                <span className="text-[#9f2f24]">Без предоплаты.</span>
+              <h1 className="max-w-3xl font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
+                Задняя четверть целиком.{" "}
+                <span className="text-[#f0d9a8]">Перед — пачками 10–15 кг.</span>
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#635b50]">
-                Молодые тёлки-герефорды 1,5 года на зерне и сене. Забой — когда
-                наберём пул. Привезём до крыльца, взвесим на поверенных весах.
-                Платите после осмотра. Мясо не лежит в магазине.
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/85">
+                Тёлки-герефорды 1,5 года. Без предоплаты: платите после
+                взвешивания. Зад — в морозилку на зиму. Перед режем на пачки,
+                чтобы не брать 50 кг сразу.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#order"
                   className="flex h-14 items-center justify-center rounded-xl bg-[#9f2f24] px-7 font-semibold text-white"
                 >
-                  Забронировать четверть
+                  Забронировать
                 </a>
                 <a
                   href="#quarters"
-                  className="flex h-14 items-center justify-center rounded-xl bg-white/70 px-7 font-semibold text-[#302a22]"
+                  className="flex h-14 items-center justify-center rounded-xl border border-white/35 bg-white/10 px-7 font-semibold text-white"
                 >
-                  Что входит в четверть
+                  Что входит
                 </a>
               </div>
             </div>
@@ -117,23 +125,24 @@ export default async function Home() {
                           style={{ width: `${progress}%` }}
                         />
                       </div>
-                      <div className="mt-3 flex justify-between text-sm">
+                      <div className="mt-3 grid gap-1 text-sm">
                         <span className="font-semibold">
-                          Забронировано {pool.totalReservedQuarters} из{" "}
-                          {pool.totalCapacityQuarters} четвертей
+                          Зад {pool.totalReservedBacks} из {TOTAL_BACKS} · пачки
+                          переда {pool.totalReservedPacks} из {TOTAL_PACKS}
                         </span>
                         <span className="text-[#71685b]">
-                          Осталось {pool.totalRemainingQuarters}
+                          На этой туше: зад {pool.remainingBacks} · пачек{" "}
+                          {pool.remainingPacks}
                         </span>
                       </div>
                       <div className="mt-5 grid grid-cols-2 gap-3">
                         <div className="rounded-2xl bg-[#f4eee3] p-4">
                           <PackageCheck className="mb-2 size-5 text-[#9f2f24]" />
                           <b className="block text-xl">
-                            ~{pool.estimatedQuarterWeight} кг
+                            ~{pool.estimatedQuarterWeight} / {FRONT_PACK_KG} кг
                           </b>
                           <small className="text-[#71685b]">
-                            одна четверть туши
+                            зад целиком / пачка переда
                           </small>
                         </div>
                         <div className="rounded-2xl bg-[#f4eee3] p-4">
@@ -169,7 +178,7 @@ export default async function Home() {
         <div className="mx-auto grid max-w-6xl gap-4 px-5 sm:grid-cols-4 sm:px-8">
           {[
             ["1", "Бронь без денег", "Имя, телефон, село. Никаких переводов заранее."],
-            ["2", "Звонок фермера", "Подтвердим четверть и день доставки."],
+            ["2", "Звонок фермера", "Подтвердим зад или пачку и день доставки."],
             ["3", "Забой после набора", "Ветэкспертиза. Не держим мясо «на витрине»."],
             ["4", "Весы при вас", "Платите по факту. Доставка до крыльца бесплатно."],
           ].map(([step, title, text]) => (
@@ -187,9 +196,11 @@ export default async function Home() {
       {pool ? (
         <BookingSection
           currentHeadNumber={pool.number}
-          currentRemaining={pool.activeRemainingQuarters}
-          totalRemaining={pool.totalRemainingQuarters}
-          estimatedWeight={pool.estimatedQuarterWeight}
+          remainingBacks={pool.remainingBacks}
+          remainingPacks={pool.remainingPacks}
+          totalRemainingBacks={pool.totalRemainingBacks}
+          totalRemainingPacks={pool.totalRemainingPacks}
+          estimatedQuarterWeight={pool.estimatedQuarterWeight}
           waitlistMode={pool.isCurrentPoolFull}
         />
       ) : (
@@ -221,8 +232,8 @@ export default async function Home() {
                 Свои тёлки-герефорды 1,5 года
               </h3>
               <p className="mt-2 text-sm leading-6 text-white/70">
-                Зерно, сено, вода. Без ускорителей. Четверть туши, не набор
-                «из обрезков».
+                Зерно, сено, вода. Без ускорителей. Зад целиком, перед пачками
+                с разделки — не магазинный набор.
               </p>
             </div>
           </div>
