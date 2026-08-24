@@ -303,7 +303,7 @@ export function toPartType(value: "front" | "back" | "any"): PartType {
 
 export function partTypeLabel(type: PartType) {
   return type === "FRONT"
-    ? "Пачка переда ~12 кг"
+    ? "Набор переда ~12 кг"
     : type === "BACK"
       ? "Задняя четверть"
       : "Четверть";

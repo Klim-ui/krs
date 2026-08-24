@@ -64,12 +64,12 @@ export default async function Home() {
               </div>
               <h1 className="max-w-3xl font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
                 Задняя четверть целиком.{" "}
-                <span className="text-[#f0d9a8]">Перед — пачками 10–15 кг.</span>
+                <span className="text-[#f0d9a8]">Перед — наборами 10–15 кг.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-white/85">
                 Тёлки-герефорды 1,5 года. Без предоплаты: платите после
-                взвешивания. Зад — в морозилку на зиму. Перед режем на пачки,
-                чтобы не брать 50 кг сразу.
+                взвешивания. Зад — в морозилку на зиму. Перед — честный набор из
+                той же четверти, чтобы не брать 50 кг сразу.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
@@ -88,86 +88,74 @@ export default async function Home() {
             </div>
 
             <div className="order-first lg:order-none">
-              <div className="relative">
-                <div className="relative aspect-[3/4] overflow-hidden rounded-[2rem] bg-[#ded5c6] sm:aspect-[4/5]">
-                  <Image
-                    src="/heifer.jpg"
-                    alt="Тёлка-герефорд 1,5 года на нашем подворье в Таврическом"
-                    fill
-                    priority
-                    sizes="(max-width: 1024px) 100vw, 42vw"
-                    className="object-cover object-[center_35%]"
-                  />
-                </div>
-                <div className="relative z-10 mx-2 -mt-10 rounded-[1.75rem] border border-white/80 bg-white p-5 sm:mx-4 sm:-mt-14 sm:p-6">
+              <div className="rounded-[1.75rem] border border-white/25 bg-white/10 p-5 sm:p-6">
                   {pool ? (
                     <>
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#47733d]">
+                          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#d9c79e]">
                             {pool.status === "UPCOMING" || pool.isCurrentPoolFull
                               ? "Лист ожидания"
                               : "Сейчас собираем"}
                           </p>
-                          <h2 className="mt-1 font-serif text-3xl font-semibold">
+                          <h2 className="mt-1 font-serif text-3xl font-semibold text-white">
                             {pool.status === "UPCOMING" || pool.isCurrentPoolFull
                               ? `Очередь на тушу №${pool.number}`
                               : `Идет бронирование: туша №${pool.number}`}
                           </h2>
                         </div>
-                        <span className="rounded-full bg-[#edf4e9] px-3 py-1.5 text-sm font-semibold text-[#47733d]">
+                        <span className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white">
                           {progress}%
                         </span>
                       </div>
-                      <div className="mt-5 h-3 overflow-hidden rounded-full bg-[#ded5c6]">
+                      <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/20">
                         <div
-                          className="h-full rounded-full bg-[#47733d]"
+                          className="h-full rounded-full bg-[#8fbf7a]"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
-                      <div className="mt-3 grid gap-1 text-sm">
+                      <div className="mt-3 grid gap-1 text-sm text-white">
                         <span className="font-semibold">
-                          Зад {pool.totalReservedBacks} из {TOTAL_BACKS} · пачки
+                          Зад {pool.totalReservedBacks} из {TOTAL_BACKS} · наборы
                           переда {pool.totalReservedPacks} из {TOTAL_PACKS}
                         </span>
-                        <span className="text-[#71685b]">
-                          На этой туше: зад {pool.remainingBacks} · пачек{" "}
+                        <span className="text-white/70">
+                          На этой туше: зад {pool.remainingBacks} · наборы{" "}
                           {pool.remainingPacks}
                         </span>
                       </div>
                       <div className="mt-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl bg-[#f4eee3] p-4">
-                          <PackageCheck className="mb-2 size-5 text-[#9f2f24]" />
+                        <div className="rounded-2xl bg-white/10 p-4 text-white">
+                          <PackageCheck className="mb-2 size-5 text-[#f0d9a8]" />
                           <b className="block text-xl">
                             ~{pool.estimatedQuarterWeight} / {FRONT_PACK_KG} кг
                           </b>
-                          <small className="text-[#71685b]">
-                            зад целиком / пачка переда
+                          <small className="text-white/70">
+                            зад целиком / набор переда
                           </small>
                         </div>
-                        <div className="rounded-2xl bg-[#f4eee3] p-4">
-                          <CalendarDays className="mb-2 size-5 text-[#9f2f24]" />
+                        <div className="rounded-2xl bg-white/10 p-4 text-white">
+                          <CalendarDays className="mb-2 size-5 text-[#f0d9a8]" />
                           <b className="block text-xl">
                             {pool.slaughterDate
                               ? pool.slaughterDate.toLocaleDateString("ru-RU")
                               : "После сбора"}
                           </b>
-                          <small className="text-[#71685b]">дата забоя</small>
+                          <small className="text-white/70">дата забоя</small>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="py-6 text-center">
-                      <Beef className="mx-auto size-10 text-[#9f2f24]" />
+                    <div className="py-6 text-center text-white">
+                      <Beef className="mx-auto size-10 text-[#f0d9a8]" />
                       <h2 className="mt-4 font-serif text-2xl font-semibold">
                         Набор скоро откроем
                       </h2>
-                      <p className="mt-2 text-[#71685b]">
+                      <p className="mt-2 text-white/70">
                         Оставьте заявку ниже — поставим в очередь на первую тушу.
                       </p>
                     </div>
                   )}
-                </div>
               </div>
             </div>
           </div>
@@ -178,7 +166,7 @@ export default async function Home() {
         <div className="mx-auto grid max-w-6xl gap-4 px-5 sm:grid-cols-4 sm:px-8">
           {[
             ["1", "Бронь без денег", "Имя, телефон, село. Никаких переводов заранее."],
-            ["2", "Звонок фермера", "Подтвердим зад или пачку и день доставки."],
+            ["2", "Звонок фермера", "Подтвердим зад или набор и день доставки."],
             ["3", "Забой после набора", "Ветэкспертиза. Не держим мясо «на витрине»."],
             ["4", "Весы при вас", "Платите по факту. Доставка до крыльца бесплатно."],
           ].map(([step, title, text]) => (
@@ -232,8 +220,8 @@ export default async function Home() {
                 Свои тёлки-герефорды 1,5 года
               </h3>
               <p className="mt-2 text-sm leading-6 text-white/70">
-                Зерно, сено, вода. Без ускорителей. Зад целиком, перед пачками
-                с разделки — не магазинный набор.
+                Зерно, сено, вода. Без ускорителей. Зад целиком, перед —
+                честный набор с разделки.
               </p>
             </div>
           </div>

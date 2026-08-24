@@ -24,8 +24,8 @@ const PART_OPTIONS: Array<{
   },
   {
     value: "front",
-    title: "Пачка переда 10–15 кг",
-    details: "Считаем ~12 кг. Лопатка, шея, грудинка, рёбра, голяшка",
+    title: "Набор из переда 10–15 кг",
+    details: "Считаем ~12 кг. 40% мякоти, 30% рёбер, 20% антрекотов, 10% супового",
   },
 ];
 
@@ -138,7 +138,7 @@ export function ReservationForm({
   if (totalRemainingBacks < 1 && totalRemainingPacks < 1) {
     return (
       <p className="py-10 text-center text-[#675e51]">
-        Все задние четверти и пачки переда уже забронированы.
+        Все задние четверти и наборы переда уже забронированы.
       </p>
     );
   }
@@ -218,7 +218,7 @@ export function ReservationForm({
       </fieldset>
 
       <label className="grid gap-2 text-sm font-medium sm:col-span-2">
-        {selectedPart === "front" ? "Количество пачек" : "Количество четвертей"}
+        {selectedPart === "front" ? "Количество наборов" : "Количество четвертей"}
         <select
           name="quarterCount"
           className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
@@ -228,8 +228,8 @@ export function ReservationForm({
               {index + 1}{" "}
               {selectedPart === "front"
                 ? index === 0
-                  ? "пачка ~12 кг"
-                  : "пачки"
+                  ? "набор ~12 кг"
+                  : "набора"
                 : index === 0
                   ? "четверть"
                   : "четверти"}

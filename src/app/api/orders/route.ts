@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
         if (nextNumber > TOTAL_HEADS) {
           throw new CapacityError(
-            "Все задние четверти и пачки переда уже забронированы",
+            "Все задние четверти и наборы переда уже забронированы",
           );
         }
 
