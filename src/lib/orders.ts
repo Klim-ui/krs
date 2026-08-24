@@ -17,6 +17,7 @@ export type PartType = keyof typeof PART_PRICES;
 export type CurrentPool = {
   id: string;
   number: number;
+  status: "ACTIVE" | "UPCOMING";
   activeReservedQuarters: number;
   activeRemainingQuarters: number;
   totalReservedQuarters: number;
@@ -36,7 +37,17 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
     .orderBy(asc(pools.number))
     .limit(1);
 
-  if (!activePool) return null;
+  const [upcomingPool] = activePool
+    ? [null]
+    : await db
+        .select()
+        .from(pools)
+        .where(eq(pools.status, "UPCOMING"))
+        .orderBy(asc(pools.number))
+        .limit(1);
+
+  const pool = activePool ?? upcomingPool;
+  if (!pool) return null;
 
   const [totals, activeTotals] = await Promise.all([
     db
@@ -51,7 +62,7 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
           sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
       })
       .from(orders)
-      .where(eq(orders.poolId, activePool.id)),
+      .where(eq(orders.poolId, pool.id)),
   ]);
 
   const totalReservedQuarters = Math.min(
@@ -59,14 +70,16 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
     totals[0]?.reserved ?? 0,
   );
   const activeReservedQuarters = activeTotals[0]?.reserved ?? 0;
+  const status = pool.status === "UPCOMING" ? "UPCOMING" : "ACTIVE";
 
   return {
-    id: activePool.id,
-    number: activePool.number,
+    id: pool.id,
+    number: pool.number,
+    status,
     activeReservedQuarters,
     activeRemainingQuarters: Math.max(
       0,
-      activePool.capacityQuarters - activeReservedQuarters,
+      pool.capacityQuarters - activeReservedQuarters,
     ),
     totalReservedQuarters,
     totalRemainingQuarters: Math.max(
@@ -74,10 +87,9 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
       TOTAL_QUARTERS - totalReservedQuarters,
     ),
     totalCapacityQuarters: TOTAL_QUARTERS,
-    estimatedQuarterWeight: Number(activePool.estimatedQuarterWeight),
-    slaughterDate: activePool.slaughterDate,
-    isCurrentPoolFull:
-      activeReservedQuarters >= activePool.capacityQuarters,
+    estimatedQuarterWeight: Number(pool.estimatedQuarterWeight),
+    slaughterDate: pool.slaughterDate,
+    isCurrentPoolFull: activeReservedQuarters >= pool.capacityQuarters,
   };
 }
 

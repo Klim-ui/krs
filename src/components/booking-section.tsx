@@ -28,6 +28,13 @@ const quarterContents: Array<{
     description: "Тазобедренная часть, вырезка, край и голяшка",
     price: PART_PRICES.back,
   },
+  {
+    value: "any",
+    title: "Любая четверть",
+    weight: "~45–55 кг",
+    description: "Поставим из того, что останется. Честно, без «одних мослов».",
+    price: PART_PRICES.any,
+  },
 ];
 
 export function BookingSection({
@@ -35,11 +42,13 @@ export function BookingSection({
   currentRemaining,
   totalRemaining,
   estimatedWeight,
+  waitlistMode,
 }: {
   currentHeadNumber: number;
   currentRemaining: number;
   totalRemaining: number;
   estimatedWeight: number;
+  waitlistMode: boolean;
 }) {
   const [selectedPart, setSelectedPart] = useState<PartChoice>("any");
   const pricePerKg = PART_PRICES[selectedPart];
@@ -61,13 +70,13 @@ export function BookingSection({
               Точный вес и сумма определяются после разделки на поверенных весах.
             </p>
           </div>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {quarterContents.map((item) => (
               <button
                 key={item.value}
                 type="button"
                 onClick={() => setSelectedPart(item.value)}
-                className={`rounded-2xl border p-6 text-left transition hover:-translate-y-1 hover:shadow-xl hover:shadow-[#66543a]/8 ${
+                className={`rounded-2xl border p-6 text-left ${
                   selectedPart === item.value
                     ? "border-[#47733d] bg-[#edf4e9]"
                     : "border-[#e5dccf] bg-white"
@@ -117,8 +126,9 @@ export function BookingSection({
               Забронируйте четверть туши
             </h2>
             <p className="mt-5 text-lg leading-8 text-[#675e51]">
-              Выберите часть, оставьте контакты. Если ближайшая туша уже
-              собран, заявка сразу встанет в очередь на следующего.
+              {waitlistMode
+                ? `Туша №${currentHeadNumber} набрана. Заявка встанет в очередь на следующую. Предоплата не нужна.`
+                : "Выберите часть и оставьте телефон. Если эта туша наберётся — поставим в очередь на следующую. Предоплата не нужна."}
             </p>
           </div>
           <div className="rounded-3xl bg-white p-6 shadow-xl shadow-[#66543a]/8 sm:p-9">

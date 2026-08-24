@@ -1,0 +1,18 @@
+---
+description: Бронь, пулы и MAX — не ломать сбыт 12 четвертей
+globs: src/app/api/**/*.ts,src/lib/**/*.ts,src/db/**/*.ts
+alwaysApply: false
+---
+
+# Бэкенд
+
+Drizzle + PostgreSQL. 3 головы × 4 четверти = 12. Пулы: ACTIVE / UPCOMING / CLOSED.
+`box_count` = число четвертей. `part_type`: FRONT / BACK / ANY. Цену считает сервер, `selectedPrice` с клиента игнорировать.
+
+Активный пул полон → заявка в лист ожидания / следующий UPCOMING (авто до 3 пулов), форму не закрывать.
+Админ может открыть тушу и сбросить тестовые заявки.
+
+MAX: `POST https://platform-api2.max.ru/messages`, заголовок `Authorization: <token>` без Bearer.
+Писать только в `MAX_CHAT_ID`. Сообщение короткое: заявка, имя, телефон, населённый пункт, часть.
+Сессия админки: cookie `krs_admin_session`. Пароль = `ADMIN_PASSWORD`.
+Не коммитить `.env` и токены.

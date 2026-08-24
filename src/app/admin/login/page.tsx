@@ -31,13 +31,13 @@ export default async function LoginPage({
               required
               autoFocus
               autoComplete="current-password"
-              className="h-13 rounded-xl border border-[#d8cdbd] px-4 text-base outline-none focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
+              className="h-14 rounded-xl border border-[#d8cdbd] px-4 text-base outline-none focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
             />
           </label>
           {params.error && (
             <p className="text-sm text-red-700">Неверный пароль</p>
           )}
-          <button className="h-13 rounded-xl bg-[#27231e] font-semibold text-white transition hover:bg-black">
+          <button className="h-14 rounded-xl bg-[#27231e] font-semibold text-white transition hover:bg-black">
             Войти
           </button>
         </form>

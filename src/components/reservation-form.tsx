@@ -81,6 +81,11 @@ export function ReservationForm({
     setError("");
 
     const form = new FormData(event.currentTarget);
+    if (phone.replace(/\D/g, "").length !== 11) {
+      setPending(false);
+      setError("Введите российский номер полностью");
+      return;
+    }
     const response = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -141,7 +146,7 @@ export function ReservationForm({
           minLength={2}
           autoComplete="name"
           placeholder="Евгений"
-          className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
+          className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
         />
       </label>
       <label className="grid gap-2 text-sm font-medium">
@@ -154,7 +159,7 @@ export function ReservationForm({
           autoComplete="tel"
           value={phone}
           onChange={(event) => setPhone(formatPhone(event.target.value))}
-          className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
+          className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
         />
       </label>
       <label className="grid gap-2 text-sm font-medium sm:col-span-2">
@@ -165,7 +170,7 @@ export function ReservationForm({
           minLength={2}
           autoComplete="address-level2"
           placeholder="Таврическое"
-          className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
+          className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
         />
       </label>
 
@@ -207,7 +212,7 @@ export function ReservationForm({
         Количество четвертей
         <select
           name="quarterCount"
-          className="h-13 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
+          className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
         >
           {Array.from({ length: maxQuarters }, (_, index) => (
             <option key={index + 1} value={index + 1}>
@@ -245,14 +250,16 @@ export function ReservationForm({
         </button>
         {waitlist && (
           <p className="mt-3 text-sm leading-6 text-[#675e51]">
-            {currentHeadNumber === 1
-              ? "Первая туша почти полностью забронирована. Оставляя заявку сейчас, вы гарантированно бронируете место во второй партии. Никакой предоплаты."
-              : `Туша №${currentHeadNumber} почти полностью забронирована. Оставляя заявку сейчас, вы гарантированно бронируете место в следующей партии. Никакой предоплаты.`}
+            Туша №{currentHeadNumber} набрана. Заявка встанет в очередь на
+            следующую. Предоплата не нужна.
           </p>
         )}
         <p className="mt-3 text-center text-xs leading-5 text-[#746b5e]">
-          Нажимая кнопку, вы соглашаетесь на обработку персональных данных.
-          Оплата только после получения. Точная сумма — по фактическому весу.
+          Нажимая кнопку, вы соглашаетесь на{" "}
+          <a href="/privacy" className="underline">
+            обработку персональных данных
+          </a>
+          . Оплата только после получения. Точная сумма — по фактическому весу.
         </p>
       </div>
     </form>
