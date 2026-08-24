@@ -14,8 +14,18 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     images: [
-      { url: "/heifer.jpg", alt: "Тёлка-герефорд 1,5 года с подворья в Таврическом" },
+      {
+        url: "/pasture.jpg",
+        alt: "Тёлки на выпасе, Таврическое",
+      },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Зад целиком. Перед — наборами. Без предоплаты.",
+    description:
+      "Тёлки-герефорды на зерне. Забой после набора пула. Взвешивание при вас. Доставка до крыльца.",
+    images: ["/pasture.jpg"],
   },
 };
 
