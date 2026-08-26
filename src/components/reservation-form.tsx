@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
+import { trackBooking } from "@/lib/metrika";
 
 export type PartChoice = "front" | "back";
 
@@ -117,6 +118,7 @@ export function ReservationForm({
       return;
     }
     setSuccess(data.waitlist ? "waitlist" : "booked");
+    trackBooking(Boolean(data.waitlist));
   }
 
   if (success) {

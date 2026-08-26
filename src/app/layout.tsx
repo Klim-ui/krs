@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { YandexMetrika } from "@/components/yandex-metrika";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -38,7 +39,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ru" className="h-full scroll-smooth">
-      <body className="flex min-h-full flex-col antialiased">{children}</body>
+      <body className="flex min-h-full flex-col antialiased">
+        <YandexMetrika />
+        {children}
+      </body>
     </html>
   );
 }
