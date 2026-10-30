@@ -2,8 +2,8 @@
 // чтобы менять номер без правки кода. Пустые значения — кнопки не показываются.
 
 export type Contacts = {
-  phoneDisplay: string;
-  phoneHref: string;
+  phoneDisplay: string | null;
+  phoneHref: string | null;
   messengerHref: string | null;
   messengerLabel: string;
 } | null;
@@ -22,15 +22,18 @@ function formatPhone(digits: string) {
 
 export function getContacts(): Contacts {
   const phone = normalizePhone(process.env.FARMER_PHONE?.trim() ?? "");
-  if (!phone) return null;
-
-  const messengerUrl = process.env.FARMER_MESSENGER_URL?.trim();
+  const rawMessengerUrl = process.env.FARMER_MESSENGER_URL?.trim() ?? "";
+  const messengerUrl = /^https:\/\//.test(rawMessengerUrl) ? rawMessengerUrl : "";
   const whatsapp = process.env.FARMER_WHATSAPP?.trim() === "1";
+  const messengerHref =
+    messengerUrl || (whatsapp && phone ? `https://wa.me/${phone}` : null);
+
+  if (!phone && !messengerHref) return null;
 
   return {
-    phoneDisplay: formatPhone(phone),
-    phoneHref: `tel:+${phone}`,
-    messengerHref: messengerUrl || (whatsapp ? `https://wa.me/${phone}` : null),
+    phoneDisplay: phone ? formatPhone(phone) : null,
+    phoneHref: phone ? `tel:+${phone}` : null,
+    messengerHref,
     messengerLabel:
       process.env.FARMER_MESSENGER_LABEL?.trim() ||
       (messengerUrl ? "Написать в MAX" : "Написать в WhatsApp"),

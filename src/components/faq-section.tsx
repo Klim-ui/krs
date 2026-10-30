@@ -59,16 +59,20 @@ export function FaqSection({ contacts }: { contacts: Contacts }) {
         {contacts ? (
           <div className="mt-8 rounded-2xl bg-[#f4eee3] p-6">
             <p className="font-serif text-2xl font-semibold">
-              Остались вопросы — позвоните фермеру
+              {contacts.phoneHref
+                ? "Остались вопросы — позвоните фермеру"
+                : "Остались вопросы — напишите фермеру"}
             </p>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <a
-                href={contacts.phoneHref}
-                className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#47733d] px-6 text-lg font-semibold text-white"
-              >
-                <Phone className="size-5" />
-                {contacts.phoneDisplay}
-              </a>
+              {contacts.phoneHref ? (
+                <a
+                  href={contacts.phoneHref}
+                  className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#47733d] px-6 text-lg font-semibold text-white"
+                >
+                  <Phone className="size-5" />
+                  {contacts.phoneDisplay}
+                </a>
+              ) : null}
               {contacts.messengerHref ? (
                 <a
                   href={contacts.messengerHref}

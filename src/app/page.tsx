@@ -2,6 +2,7 @@ import {
   Beef,
   CalendarDays,
   MapPin,
+  MessageCircle,
   PackageCheck,
   Phone,
   Scale,
@@ -72,7 +73,7 @@ export default async function Home() {
               </span>
             </a>
             <div className="flex items-center gap-2">
-              {contacts ? (
+              {contacts?.phoneHref ? (
                 <a
                   href={contacts.phoneHref}
                   aria-label={`Позвонить ${contacts.phoneDisplay}`}
@@ -80,6 +81,17 @@ export default async function Home() {
                 >
                   <Phone className="size-4" />
                   <span className="hidden sm:inline">{contacts.phoneDisplay}</span>
+                </a>
+              ) : contacts?.messengerHref ? (
+                <a
+                  href={contacts.messengerHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={contacts.messengerLabel}
+                  className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-2.5 text-sm font-semibold text-white sm:px-4"
+                >
+                  <MessageCircle className="size-4" />
+                  <span className="hidden sm:inline">{contacts.messengerLabel}</span>
                 </a>
               ) : null}
               <a
@@ -254,9 +266,12 @@ export default async function Home() {
         <section id="order" className="bg-[#f4eee3] py-20">
           <p className="px-5 py-10 text-center text-lg text-[#675e51]">
             Приём броней сейчас закрыт. Напишите фермеру — откроем набор.
-            {contacts ? (
-              <a href={contacts.phoneHref} className="mt-3 block font-semibold text-[#47733d]">
-                {contacts.phoneDisplay}
+            {contacts && (contacts.phoneHref || contacts.messengerHref) ? (
+              <a
+                href={contacts.phoneHref ?? contacts.messengerHref ?? undefined}
+                className="mt-3 block font-semibold text-[#47733d]"
+              >
+                {contacts.phoneDisplay ?? contacts.messengerLabel}
               </a>
             ) : null}
           </p>
@@ -321,7 +336,10 @@ export default async function Home() {
       </footer>
 
       {pool && pool.totalRemainingQuarters > 0 ? (
-        <StickyBookBar phoneHref={contacts?.phoneHref} />
+        <StickyBookBar
+          phoneHref={contacts?.phoneHref ?? undefined}
+          messengerHref={contacts?.messengerHref ?? undefined}
+        />
       ) : null}
     </main>
   );
