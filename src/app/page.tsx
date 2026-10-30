@@ -1,14 +1,4 @@
-import {
-  Beef,
-  CalendarDays,
-  MapPin,
-  MessageCircle,
-  PackageCheck,
-  Phone,
-  Scale,
-  Sprout,
-  Truck,
-} from "lucide-react";
+import { Beef, MapPin, MessageCircle, Phone } from "lucide-react";
 import Image from "next/image";
 import { BookingSection } from "@/components/booking-section";
 import { FaqSection } from "@/components/faq-section";
@@ -31,45 +21,62 @@ function upcomingDate(date: Date | null) {
   return date.getTime() > Date.now() - 24 * 60 * 60 * 1000 ? date : null;
 }
 
+// Фотодневник: реальные фото тёлок фермера, от полугода до сегодня.
+const diary = [
+  {
+    src: "/photos/2025-12.webp",
+    date: "Декабрь 2025",
+    text: "Полгода. Только с подсоса — первые полгода были с мамками.",
+    alt: "Две полугодовалые тёлки на сене зимой",
+  },
+  {
+    src: "/photos/2026-04.webp",
+    date: "Апрель 2026",
+    text: "Сено, ячмень, овёс. Гуляют в своём загоне, без ускорителей.",
+    alt: "Тёлки в загоне весной",
+  },
+  {
+    src: "/photos/2026-06.webp",
+    date: "Июнь 2026",
+    text: "Год. Тот же корм: сено, ячмень, овёс. Набирают вес без спешки.",
+    alt: "Тёлки отдыхают на сене летом",
+  },
+  {
+    src: "/photos/heifers-now.webp",
+    date: "Октябрь 2026",
+    text: "Полтора года, под 400 кг живого веса. Вот они — все три.",
+    alt: "Три тёлки в загоне осенью",
+  },
+];
+
+const steps = [
+  ["Бронь без денег", "Имя, телефон, село. Никаких переводов заранее."],
+  ["Звонок фермера", "Подтвердим зад или набор и день доставки."],
+  ["Забой после набора", "Ветэкспертиза. Мясо не лежит «на витрине»."],
+  ["Весы у крыльца", "Взвешиваем при вас, платите по факту. Доставка бесплатно."],
+];
+
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const pool = await getCurrentPool();
   const contacts = getContacts();
-  // Прошедшая дата забоя выглядит как заброшенный сайт — показываем «После сбора».
   const slaughterDate = upcomingDate(pool?.slaughterDate ?? null);
   const backKg = pool?.estimatedQuarterWeight ?? 50;
-  const hasReservations = Boolean(pool && pool.totalReservedQuarters > 0);
-  const progress = pool
-    ? Math.min(
-        100,
-        Math.round(
-          (pool.totalReservedQuarters / pool.totalCapacityQuarters) * 100,
-        ),
-      )
-    : 0;
 
   return (
-    <main className="overflow-hidden pb-24 sm:pb-0">
-      <section className="relative min-h-[100svh]">
-        <Image
-          src="/pasture.jpg"
-          alt="Тёлки на выпасе"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-[#1a1610]/62" />
-        <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:pb-24">
+    <main className="overflow-hidden bg-[#fffdf9] pb-24 text-[#251f18] sm:pb-0">
+      {/* Первый экран */}
+      <section className="bg-[#f4eee3]">
+        <div className="mx-auto max-w-6xl px-5 pb-12 pt-5 sm:px-8 lg:pb-20">
           <header className="flex items-center justify-between gap-3">
             <a href="#" className="flex items-center gap-3">
               <span className="grid size-10 place-items-center rounded-full bg-[#47733d] text-white">
                 <Beef className="size-5" />
               </span>
-              <span className="leading-tight text-white">
+              <span className="leading-tight">
                 <b className="block font-serif text-lg">Мясной Пул</b>
-                <small className="text-white/70">Таврическое</small>
+                <small className="text-[#635b50]">Таврическое</small>
               </span>
             </a>
             <div className="flex items-center gap-2">
@@ -77,7 +84,7 @@ export default async function Home() {
                 <a
                   href={contacts.phoneHref}
                   aria-label="Позвонить фермеру"
-                  className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-2.5 text-sm font-semibold text-white sm:px-4"
+                  className="flex h-11 items-center gap-2 rounded-full border border-[#47733d]/40 px-3 text-sm font-semibold text-[#47733d] sm:px-4"
                 >
                   <Phone className="size-4" />
                   <span className="hidden sm:inline">Позвонить</span>
@@ -88,167 +95,184 @@ export default async function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={contacts.messengerLabel}
-                  className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-2.5 text-sm font-semibold text-white sm:px-4"
+                  className="flex h-11 items-center gap-2 rounded-full border border-[#47733d]/40 px-3 text-sm font-semibold text-[#47733d] sm:px-4"
                 >
                   <MessageCircle className="size-4" />
-                  <span className="hidden sm:inline">{contacts.messengerLabel}</span>
+                  <span className="hidden sm:inline">Написать</span>
                 </a>
               ) : null}
               <a
                 href="#order"
-                className="rounded-full bg-[#9f2f24] px-4 py-2.5 text-sm font-semibold text-white sm:px-5"
+                className="flex h-11 items-center rounded-full bg-[#9f2f24] px-4 text-sm font-semibold text-white sm:px-5"
               >
                 Бронь без оплаты
               </a>
             </div>
           </header>
 
-          <div className="grid items-center gap-10 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:pt-16">
+          <div className="grid items-center gap-8 pt-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:pt-14">
             <div className="min-w-0">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-2 text-sm font-medium text-white">
-                <MapPin className="size-4" />
-                Таврический район и Омск
-              </div>
-              <h1 className="max-w-3xl font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
-                Задняя четверть целиком.{" "}
-                <span className="text-[#f0d9a8]">Перед — наборами 10–15 кг.</span>
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/85">
-                Тёлки-герефорды 1,5 года. Без предоплаты: платите после
-                взвешивания. Зад — в морозилку на зиму. Перед — честный набор из
-                той же четверти, чтобы не брать 50 кг сразу.
+              <p className="mb-4 inline-flex items-center gap-2 text-base font-semibold text-[#47733d]">
+                <MapPin className="size-5" />
+                Тавричанка → Таврический район и Омск
               </p>
-              <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-white/12 px-4 py-3 text-white">
+              <h1 className="font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-6xl">
+                Домашняя говядина своих тёлок — на зиму, без предоплаты
+              </h1>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-[#4f473c]">
+                Растил сам: полгода на подсосе, потом год на сене, ячмене и
+                овсе. Зад — четвертью целиком, перед — наборами 10–15 кг. Платите
+                после взвешивания у крыльца.
+              </p>
+
+              <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-white px-4 py-3">
                   <b className="block text-2xl">≈ {rub(FRONT_PACK_KG * PART_PRICES.FRONT)}</b>
-                  <small className="text-base text-white/80">
+                  <small className="text-base text-[#635b50]">
                     набор переда ~{FRONT_PACK_KG} кг · {PART_PRICES.FRONT} ₽/кг
                   </small>
                 </div>
-                <div className="rounded-2xl bg-white/12 px-4 py-3 text-white">
+                <div className="rounded-2xl bg-white px-4 py-3">
                   <b className="block text-2xl">≈ {rub(backKg * PART_PRICES.BACK)}</b>
-                  <small className="text-base text-white/80">
+                  <small className="text-base text-[#635b50]">
                     задняя четверть ~{backKg} кг · {PART_PRICES.BACK} ₽/кг
                   </small>
                 </div>
               </div>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#order"
-                  className="flex h-14 items-center justify-center rounded-xl bg-[#9f2f24] px-7 font-semibold text-white"
+                  className="flex h-14 items-center justify-center rounded-xl bg-[#9f2f24] px-7 text-lg font-semibold text-white"
                 >
                   Забронировать
                 </a>
-                <a
-                  href="#quarters"
-                  className="flex h-14 items-center justify-center rounded-xl border border-white/35 bg-white/10 px-7 font-semibold text-white"
-                >
-                  Что входит
-                </a>
+                {contacts?.messengerHref ? (
+                  <a
+                    href={contacts.messengerHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-14 items-center justify-center gap-2 rounded-xl border-2 border-[#47733d] px-7 text-lg font-semibold text-[#47733d]"
+                  >
+                    <MessageCircle className="size-5" />
+                    {contacts.messengerLabel}
+                  </a>
+                ) : (
+                  <a
+                    href="#tyolki"
+                    className="flex h-14 items-center justify-center rounded-xl border-2 border-[#47733d] px-7 text-lg font-semibold text-[#47733d]"
+                  >
+                    Посмотреть тёлок
+                  </a>
+                )}
               </div>
-            </div>
 
-            <div className="order-first lg:order-none">
-              <div className="rounded-[1.75rem] border border-white/25 bg-white/10 p-5 sm:p-6">
-                  {pool ? (
+              {pool ? (
+                <p className="mt-5 text-base text-[#4f473c]">
+                  {pool.status === "UPCOMING" || pool.isCurrentPoolFull ? (
                     <>
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#d9c79e]">
-                            {pool.status === "UPCOMING" || pool.isCurrentPoolFull
-                              ? "Лист ожидания"
-                              : "Сейчас собираем"}
-                          </p>
-                          <h2 className="mt-1 font-serif text-3xl font-semibold text-white">
-                            {pool.status === "UPCOMING" || pool.isCurrentPoolFull
-                              ? `Очередь на тушу №${pool.number}`
-                              : `Идет бронирование: туша №${pool.number}`}
-                          </h2>
-                        </div>
-                        {hasReservations ? (
-                          <span className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white">
-                            {progress}%
-                          </span>
-                        ) : null}
-                      </div>
-                      {hasReservations ? (
-                        <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/20">
-                          <div
-                            className="h-full rounded-full bg-[#8fbf7a]"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      ) : null}
-                      <div className="mt-3 grid gap-1 text-base text-white">
-                        {hasReservations ? (
-                          <span className="font-semibold">
-                            Забронировано: зад {pool.totalReservedBacks} из{" "}
-                            {TOTAL_BACKS} · наборы переда{" "}
-                            {pool.totalReservedPacks} из {TOTAL_PACKS}
-                          </span>
-                        ) : null}
-                        <span className={hasReservations ? "text-white/75" : "font-semibold"}>
-                          Свободно на туше №{pool.number}: задних четвертей{" "}
-                          {pool.remainingBacks} · наборов переда{" "}
-                          {pool.remainingPacks}
-                        </span>
-                      </div>
-                      <div className="mt-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl bg-white/10 p-4 text-white">
-                          <PackageCheck className="mb-2 size-5 text-[#f0d9a8]" />
-                          <b className="block text-xl">
-                            ~{pool.estimatedQuarterWeight} / {FRONT_PACK_KG} кг
-                          </b>
-                          <small className="text-white/70">
-                            зад целиком / набор переда
-                          </small>
-                        </div>
-                        <div className="rounded-2xl bg-white/10 p-4 text-white">
-                          <CalendarDays className="mb-2 size-5 text-[#f0d9a8]" />
-                          <b className="block text-xl">
-                            {slaughterDate
-                              ? slaughterDate.toLocaleDateString("ru-RU", {
-                                  timeZone: "Asia/Omsk",
-                                })
-                              : "После сбора"}
-                          </b>
-                          <small className="text-white/70">дата забоя</small>
-                        </div>
-                      </div>
+                      <b>Текущая тёлка набрана.</b> Записываем в очередь на
+                      следующую.
                     </>
                   ) : (
-                    <div className="py-6 text-center text-white">
-                      <Beef className="mx-auto size-10 text-[#f0d9a8]" />
-                      <h2 className="mt-4 font-serif text-2xl font-semibold">
-                        Набор скоро откроем
-                      </h2>
-                      <p className="mt-2 text-white/70">
-                        Оставьте заявку ниже — поставим в очередь на первую тушу.
-                      </p>
-                    </div>
-                  )}
-              </div>
+                    <>
+                      <b>Свободно сейчас:</b> задних четвертей —{" "}
+                      {pool.remainingBacks}, наборов переда —{" "}
+                      {pool.remainingPacks}.
+                    </>
+                  )}{" "}
+                  Забой —{" "}
+                  {slaughterDate
+                    ? slaughterDate.toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                        timeZone: "Asia/Omsk",
+                      })
+                    : "когда наберём брони на тёлку"}
+                  .
+                </p>
+              ) : null}
             </div>
+
+            <figure className="relative">
+              <Image
+                src="/photos/2026-10.webp"
+                alt="Тёлка смотрит в камеру, октябрь 2026"
+                width={1000}
+                height={750}
+                priority
+                sizes="(min-width: 1024px) 45vw, 100vw"
+                className="aspect-[4/3] w-full rounded-[1.75rem] object-cover"
+              />
+              <figcaption className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1.5 text-sm font-semibold">
+                Октябрь 2026, Тавричанка
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
 
-      <section className="bg-white py-12 sm:py-16">
-        <div className="mx-auto grid max-w-6xl gap-4 px-5 sm:grid-cols-4 sm:px-8">
-          {[
-            ["1", "Бронь без денег", "Имя, телефон, село. Никаких переводов заранее."],
-            ["2", "Звонок фермера", "Подтвердим зад или набор и день доставки."],
-            ["3", "Забой после набора", "Ветэкспертиза. Не держим мясо «на витрине»."],
-            ["4", "Весы при вас", "Платите по факту. Доставка до крыльца бесплатно."],
-          ].map(([step, title, text]) => (
-            <div key={step} className="rounded-2xl border border-[#e5dccf] p-5">
-              <span className="font-serif text-2xl font-semibold text-[#9f2f24]">
-                {step}
-              </span>
-              <h3 className="mt-2 font-serif text-xl font-semibold">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-[#71685b]">{text}</p>
-            </div>
-          ))}
+      {/* Фотодневник */}
+      <section id="tyolki" className="py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <h2 className="font-serif text-3xl font-semibold tracking-tight sm:text-5xl">
+            Растут у меня с полугода
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-[#4f473c]">
+            Не перекуп и не магазин. Три тёлки герефорд и симментал, свой двор
+            в Тавричанке. Вот как они росли.
+          </p>
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {diary.map((item) => (
+              <figure key={item.date}>
+                <Image
+                  src={item.src}
+                  alt={item.alt}
+                  width={1000}
+                  height={750}
+                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  className="aspect-[4/3] w-full rounded-2xl object-cover"
+                />
+                <figcaption className="mt-3">
+                  <b className="block font-serif text-xl">{item.date}</b>
+                  <span className="mt-1 block text-base leading-7 text-[#4f473c]">
+                    {item.text}
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Как это работает */}
+      <section className="bg-[#47733d] py-14 text-white sm:py-20">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <h2 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+            Как это работает
+          </h2>
+          <ol className="mt-8 grid gap-6 sm:grid-cols-4">
+            {steps.map(([title, text], index) => (
+              <li key={title} className="flex gap-4 sm:block">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white font-serif text-xl font-semibold text-[#47733d]">
+                  {index + 1}
+                </span>
+                <span>
+                  <b className="block font-serif text-xl sm:mt-3">{title}</b>
+                  <span className="mt-1 block text-base leading-7 text-white/80">
+                    {text}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          {pool ? (
+            <p className="mt-8 text-base text-white/80">
+              Всего на три тёлки: {TOTAL_BACKS} задних четвертей и {TOTAL_PACKS}{" "}
+              наборов переда. Забронировано: {pool.totalReservedBacks} и{" "}
+              {pool.totalReservedPacks}.
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -277,47 +301,6 @@ export default async function Home() {
           </p>
         </section>
       )}
-
-      <section className="bg-[#47733d] py-16 text-white sm:py-20">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 sm:grid-cols-3 sm:px-8">
-          <div className="flex gap-4">
-            <Scale className="mt-1 size-7 shrink-0 text-[#d9c79e]" />
-            <div>
-              <h3 className="font-serif text-xl font-semibold">
-                Без предоплаты и обвеса
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-white/70">
-                Сумма — после разделки на поверенных весах. Платите, когда
-                мясо у вас.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <Sprout className="mt-1 size-7 shrink-0 text-[#d9c79e]" />
-            <div>
-              <h3 className="font-serif text-xl font-semibold">
-                Свои тёлки-герефорды 1,5 года
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-white/70">
-                Зерно, сено, вода. Без ускорителей. Зад целиком, перед —
-                честный набор с разделки.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <Truck className="mt-1 size-7 shrink-0 text-[#d9c79e]" />
-            <div>
-              <h3 className="font-serif text-xl font-semibold">
-                До крыльца бесплатно
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-white/70">
-                Таврический район и Омск в день забоя. Не жарится в дороге
-                сутками.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <FaqSection contacts={contacts} />
 
