@@ -70,7 +70,7 @@ export function FaqSection({ contacts }: { contacts: Contacts }) {
                   className="flex h-14 items-center justify-center gap-2 rounded-xl bg-[#47733d] px-6 text-lg font-semibold text-white"
                 >
                   <Phone className="size-5" />
-                  {contacts.phoneDisplay}
+                  Позвонить
                 </a>
               ) : null}
               {contacts.messengerHref ? (
