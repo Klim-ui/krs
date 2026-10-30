@@ -3,19 +3,42 @@ import {
   CalendarDays,
   MapPin,
   PackageCheck,
+  Phone,
   Scale,
   Sprout,
   Truck,
 } from "lucide-react";
 import Image from "next/image";
 import { BookingSection } from "@/components/booking-section";
+import { FaqSection } from "@/components/faq-section";
 import { StickyBookBar } from "@/components/sticky-book-bar";
-import { FRONT_PACK_KG, TOTAL_BACKS, TOTAL_PACKS, getCurrentPool } from "@/lib/orders";
+import { getContacts } from "@/lib/contacts";
+import {
+  FRONT_PACK_KG,
+  PART_PRICES,
+  TOTAL_BACKS,
+  TOTAL_PACKS,
+  getCurrentPool,
+} from "@/lib/orders";
+
+function rub(value: number) {
+  return `${(Math.round(value / 10) * 10).toLocaleString("ru-RU")} ₽`;
+}
+
+function upcomingDate(date: Date | null) {
+  if (!date) return null;
+  return date.getTime() > Date.now() - 24 * 60 * 60 * 1000 ? date : null;
+}
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const pool = await getCurrentPool();
+  const contacts = getContacts();
+  // Прошедшая дата забоя выглядит как заброшенный сайт — показываем «После сбора».
+  const slaughterDate = upcomingDate(pool?.slaughterDate ?? null);
+  const backKg = pool?.estimatedQuarterWeight ?? 50;
+  const hasReservations = Boolean(pool && pool.totalReservedQuarters > 0);
   const progress = pool
     ? Math.min(
         100,
@@ -48,12 +71,24 @@ export default async function Home() {
                 <small className="text-white/70">Таврическое</small>
               </span>
             </a>
-            <a
-              href="#order"
-              className="rounded-full bg-[#9f2f24] px-4 py-2.5 text-sm font-semibold text-white sm:px-5"
-            >
-              Бронь без оплаты
-            </a>
+            <div className="flex items-center gap-2">
+              {contacts ? (
+                <a
+                  href={contacts.phoneHref}
+                  aria-label={`Позвонить ${contacts.phoneDisplay}`}
+                  className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-2.5 text-sm font-semibold text-white sm:px-4"
+                >
+                  <Phone className="size-4" />
+                  <span className="hidden sm:inline">{contacts.phoneDisplay}</span>
+                </a>
+              ) : null}
+              <a
+                href="#order"
+                className="rounded-full bg-[#9f2f24] px-4 py-2.5 text-sm font-semibold text-white sm:px-5"
+              >
+                Бронь без оплаты
+              </a>
+            </div>
           </header>
 
           <div className="grid items-center gap-10 pt-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:pt-16">
@@ -71,6 +106,20 @@ export default async function Home() {
                 взвешивания. Зад — в морозилку на зиму. Перед — честный набор из
                 той же четверти, чтобы не брать 50 кг сразу.
               </p>
+              <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-white/12 px-4 py-3 text-white">
+                  <b className="block text-2xl">≈ {rub(FRONT_PACK_KG * PART_PRICES.FRONT)}</b>
+                  <small className="text-base text-white/80">
+                    набор переда ~{FRONT_PACK_KG} кг · {PART_PRICES.FRONT} ₽/кг
+                  </small>
+                </div>
+                <div className="rounded-2xl bg-white/12 px-4 py-3 text-white">
+                  <b className="block text-2xl">≈ {rub(backKg * PART_PRICES.BACK)}</b>
+                  <small className="text-base text-white/80">
+                    задняя четверть ~{backKg} кг · {PART_PRICES.BACK} ₽/кг
+                  </small>
+                </div>
+              </div>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#order"
@@ -104,23 +153,31 @@ export default async function Home() {
                               : `Идет бронирование: туша №${pool.number}`}
                           </h2>
                         </div>
-                        <span className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white">
-                          {progress}%
-                        </span>
+                        {hasReservations ? (
+                          <span className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white">
+                            {progress}%
+                          </span>
+                        ) : null}
                       </div>
-                      <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/20">
-                        <div
-                          className="h-full rounded-full bg-[#8fbf7a]"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                      <div className="mt-3 grid gap-1 text-sm text-white">
-                        <span className="font-semibold">
-                          Зад {pool.totalReservedBacks} из {TOTAL_BACKS} · наборы
-                          переда {pool.totalReservedPacks} из {TOTAL_PACKS}
-                        </span>
-                        <span className="text-white/70">
-                          На этой туше: зад {pool.remainingBacks} · наборы{" "}
+                      {hasReservations ? (
+                        <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/20">
+                          <div
+                            className="h-full rounded-full bg-[#8fbf7a]"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      ) : null}
+                      <div className="mt-3 grid gap-1 text-base text-white">
+                        {hasReservations ? (
+                          <span className="font-semibold">
+                            Забронировано: зад {pool.totalReservedBacks} из{" "}
+                            {TOTAL_BACKS} · наборы переда{" "}
+                            {pool.totalReservedPacks} из {TOTAL_PACKS}
+                          </span>
+                        ) : null}
+                        <span className={hasReservations ? "text-white/75" : "font-semibold"}>
+                          Свободно на туше №{pool.number}: задних четвертей{" "}
+                          {pool.remainingBacks} · наборов переда{" "}
                           {pool.remainingPacks}
                         </span>
                       </div>
@@ -137,8 +194,10 @@ export default async function Home() {
                         <div className="rounded-2xl bg-white/10 p-4 text-white">
                           <CalendarDays className="mb-2 size-5 text-[#f0d9a8]" />
                           <b className="block text-xl">
-                            {pool.slaughterDate
-                              ? pool.slaughterDate.toLocaleDateString("ru-RU")
+                            {slaughterDate
+                              ? slaughterDate.toLocaleDateString("ru-RU", {
+                                  timeZone: "Asia/Omsk",
+                                })
                               : "После сбора"}
                           </b>
                           <small className="text-white/70">дата забоя</small>
@@ -195,6 +254,11 @@ export default async function Home() {
         <section id="order" className="bg-[#f4eee3] py-20">
           <p className="px-5 py-10 text-center text-lg text-[#675e51]">
             Приём броней сейчас закрыт. Напишите фермеру — откроем набор.
+            {contacts ? (
+              <a href={contacts.phoneHref} className="mt-3 block font-semibold text-[#47733d]">
+                {contacts.phoneDisplay}
+              </a>
+            ) : null}
           </p>
         </section>
       )}
@@ -240,6 +304,8 @@ export default async function Home() {
         </div>
       </section>
 
+      <FaqSection contacts={contacts} />
+
       <footer className="bg-[#27231e] py-8 text-white/60">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <span>© {new Date().getFullYear()} Мясной Пул Таврическое</span>
@@ -254,7 +320,9 @@ export default async function Home() {
         </div>
       </footer>
 
-      {pool && pool.totalRemainingQuarters > 0 ? <StickyBookBar /> : null}
+      {pool && pool.totalRemainingQuarters > 0 ? (
+        <StickyBookBar phoneHref={contacts?.phoneHref} />
+      ) : null}
     </main>
   );
 }

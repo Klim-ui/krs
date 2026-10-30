@@ -23,6 +23,8 @@ npm run dev
 - `MAX_BOT_TOKEN` — токен MAX-бота после модерации, необязательно.
 - `MAX_USER_ID` — ID пользователя для личных уведомлений из `bot_started`.
 - `MAX_CHAT_ID` — альтернативный ID группового чата; `MAX_USER_ID` приоритетнее.
+- `FARMER_PHONE` — телефон фермера для кнопок «Позвонить»; без него кнопки скрыты.
+- `FARMER_MESSENGER_URL` — ссылка на MAX для кнопки «Написать»; или `FARMER_WHATSAPP=1` для WhatsApp.
 
 ## Команды
 
