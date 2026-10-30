@@ -76,11 +76,11 @@ export default async function Home() {
               {contacts?.phoneHref ? (
                 <a
                   href={contacts.phoneHref}
-                  aria-label={`Позвонить ${contacts.phoneDisplay}`}
+                  aria-label="Позвонить фермеру"
                   className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-2.5 text-sm font-semibold text-white sm:px-4"
                 >
                   <Phone className="size-4" />
-                  <span className="hidden sm:inline">{contacts.phoneDisplay}</span>
+                  <span className="hidden sm:inline">Позвонить</span>
                 </a>
               ) : contacts?.messengerHref ? (
                 <a
@@ -271,7 +271,7 @@ export default async function Home() {
                 href={contacts.phoneHref ?? contacts.messengerHref ?? undefined}
                 className="mt-3 block font-semibold text-[#47733d]"
               >
-                {contacts.phoneDisplay ?? contacts.messengerLabel}
+                {contacts.phoneHref ? "Позвонить фермеру" : contacts.messengerLabel}
               </a>
             ) : null}
           </p>
