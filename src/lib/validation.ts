@@ -13,7 +13,11 @@ export const orderSchema = z.object({
     )
     .transform((value) => `+7${value.replace(/^\+?7|^8/, "")}`),
   locality: z.string().trim().min(2, "Укажите населённый пункт").max(100),
-  quarterCount: z.coerce.number().int().min(1).max(4),
+  quarterCount: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(2, "За раз можно взять не больше двух четвертей"),
   part_type: z.enum(["front", "back", "any"]),
   selectedPrice: z.coerce.number().optional(),
   website: z.string().max(0).optional().default(""),

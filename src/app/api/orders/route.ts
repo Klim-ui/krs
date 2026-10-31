@@ -4,7 +4,6 @@ import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
 import { sendReservationNotification } from "@/lib/max";
 import {
-  FRONT_PACK_KG,
   PART_PRICES,
   QUARTERS_PER_HEAD,
   TOTAL_HEADS,
@@ -84,7 +83,7 @@ export async function POST(request: Request) {
 
         if (nextNumber > TOTAL_HEADS) {
           throw new CapacityError(
-            "Все задние четверти и наборы переда уже забронированы",
+            "Все четверти уже забронированы",
           );
         }
 
@@ -119,10 +118,7 @@ export async function POST(request: Request) {
           partType,
           pricePerKgSnapshot: String(pricePerKg),
           estimatedWeightSnapshot: String(
-            (partType === "FRONT"
-              ? FRONT_PACK_KG
-              : Number(target.estimatedQuarterWeight)) *
-              parsed.data.quarterCount,
+            Number(target.estimatedQuarterWeight) * parsed.data.quarterCount,
           ),
         })
         .returning({ id: orders.id });

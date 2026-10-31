@@ -6,11 +6,9 @@ import { trackBooking } from "@/lib/metrika";
 
 export type PartChoice = "front" | "back";
 
-export const FRONT_PACK_KG = 12;
-
 const PART_PRICES: Record<PartChoice, number> = {
-  front: 530,
-  back: 570,
+  front: 550,
+  back: 600,
 };
 
 const PART_OPTIONS: Array<{
@@ -21,12 +19,12 @@ const PART_OPTIONS: Array<{
   {
     value: "back",
     title: "Задняя четверть целиком",
-    details: "~45–55 кг: тазобедренная, вырезка, край, голяшка",
+    details: "~45–55 кг на кости: тазобедренная, вырезка, край, голяшка",
   },
   {
     value: "front",
-    title: "Набор из переда 10–15 кг",
-    details: "Считаем ~12 кг. 40% мякоти, 30% рёбер, 20% антрекотов, 10% супового",
+    title: "Передняя четверть целиком",
+    details: "~45–55 кг на кости: лопатка, шея, грудинка, рёбра, голяшка",
   },
 ];
 
@@ -78,7 +76,7 @@ export function ReservationForm({
     selectedPart === "front" ? totalRemainingPacks : totalRemainingBacks;
   const waitlist = currentRemaining < 1 && totalRemaining > 0;
   const maxUnits = Math.min(
-    selectedPart === "front" ? 4 : 2,
+    2,
     waitlist ? totalRemaining : currentRemaining,
   );
   const pricePerKg = PART_PRICES[selectedPart];
@@ -140,7 +138,7 @@ export function ReservationForm({
   if (totalRemainingBacks < 1 && totalRemainingPacks < 1) {
     return (
       <p className="py-10 text-center text-[#675e51]">
-        Все задние четверти и наборы переда уже забронированы.
+        Все четверти уже забронированы.
       </p>
     );
   }
@@ -208,9 +206,7 @@ export function ReservationForm({
               <small className="mt-1 block font-semibold text-[#9f2f24]">
                 {PART_PRICES[option.value]} ₽/кг · ~
                 {Math.round(
-                  (option.value === "front"
-                    ? FRONT_PACK_KG
-                    : estimatedQuarterWeight) * PART_PRICES[option.value],
+                  estimatedQuarterWeight * PART_PRICES[option.value],
                 ).toLocaleString("ru-RU")}{" "}
                 ₽
               </small>
@@ -220,7 +216,7 @@ export function ReservationForm({
       </fieldset>
 
       <label className="grid gap-2 text-sm font-medium sm:col-span-2">
-        {selectedPart === "front" ? "Количество наборов" : "Количество четвертей"}
+        Количество четвертей
         <select
           name="quarterCount"
           className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
@@ -228,13 +224,7 @@ export function ReservationForm({
           {Array.from({ length: Math.max(maxUnits, 0) }, (_, index) => (
             <option key={index + 1} value={index + 1}>
               {index + 1}{" "}
-              {selectedPart === "front"
-                ? index === 0
-                  ? "набор ~12 кг"
-                  : "набора"
-                : index === 0
-                  ? "четверть"
-                  : "четверти"}
+              {index === 0 ? "четверть" : "четверти"}
             </option>
           ))}
         </select>
