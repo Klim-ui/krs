@@ -9,9 +9,8 @@ import {
   TOTAL_HEADS,
   partTypeLabel,
   remainingSlots,
-  toPartType,
 } from "@/lib/orders";
-import { orderSchema } from "@/lib/validation";
+import { orderSchema, requestedQuarters } from "@/lib/validation";
 
 class CapacityError extends Error {}
 
@@ -28,8 +27,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const partType = toPartType(parsed.data.part_type);
-  const pricePerKg = PART_PRICES[partType];
+  const requested = requestedQuarters(parsed.data);
+  if (requested.back + requested.front < 1) {
+    return NextResponse.json(
+      { error: "Выберите хотя бы одну четверть" },
+      { status: 400 },
+    );
+  }
 
   try {
     const db = getDb();
@@ -64,13 +68,15 @@ export async function POST(request: Request) {
         )
         .groupBy(orders.poolId, orders.partType);
 
-      const kind = partType === "FRONT" ? "FRONT" : "BACK";
-
+      // Зад и перед одной заявки кладём на одну тушу — чтобы забирать в один день.
       let target = openPools.find((pool) => {
         const rows = reservations
           .filter((row) => row.poolId === pool.id)
           .map((row) => ({ partType: row.partType, units: row.units }));
-        return remainingSlots(rows, kind) >= parsed.data.quarterCount;
+        return (
+          remainingSlots(rows, "BACK") >= requested.back &&
+          remainingSlots(rows, "FRONT") >= requested.front
+        );
       });
 
       if (!target) {
@@ -83,7 +89,7 @@ export async function POST(request: Request) {
 
         if (nextNumber > TOTAL_HEADS) {
           throw new CapacityError(
-            "Все четверти уже забронированы",
+            "Столько четвертей на одну тушу уже не осталось. Позвоните или напишите — подберём вариант.",
           );
         }
 
@@ -96,42 +102,61 @@ export async function POST(request: Request) {
             estimatedQuarterWeight: String(
               openPools[0]?.estimatedQuarterWeight ?? "50",
             ),
-            pricePerKg: String(PART_PRICES.ANY),
+            pricePerKg: String(PART_PRICES.BACK),
           })
           .returning();
         target = created;
       }
 
-      const activePool = openPools.find((pool) => pool.status === "ACTIVE");
-      const waitlist = Boolean(
-        activePool && target.number > activePool.number,
-      );
+      const pool = target;
+      const activePool = openPools.find((open) => open.status === "ACTIVE");
+      const waitlist = Boolean(activePool && pool.number > activePool.number);
 
-      const [order] = await tx
+      const items = (
+        [
+          ["BACK", requested.back],
+          ["FRONT", requested.front],
+        ] as const
+      ).filter(([, count]) => count > 0);
+
+      const created = await tx
         .insert(orders)
-        .values({
-          poolId: target.id,
-          name: parsed.data.name,
-          phone: parsed.data.phone,
-          locality: parsed.data.locality,
-          quarterCount: parsed.data.quarterCount,
-          partType,
-          pricePerKgSnapshot: String(pricePerKg),
-          estimatedWeightSnapshot: String(
-            Number(target.estimatedQuarterWeight) * parsed.data.quarterCount,
-          ),
-        })
+        .values(
+          items.map(([partType, count]) => ({
+            poolId: pool.id,
+            name: parsed.data.name,
+            phone: parsed.data.phone,
+            locality: parsed.data.locality,
+            quarterCount: count,
+            partType,
+            pricePerKgSnapshot: String(PART_PRICES[partType]),
+            estimatedWeightSnapshot: String(
+              Number(pool.estimatedQuarterWeight) * count,
+            ),
+          })),
+        )
         .returning({ id: orders.id });
 
-      return { order, waitlist };
+      return { order: created[0], waitlist };
     });
+
+    const partsText = [
+      requested.back > 0
+        ? `${partTypeLabel("BACK")} × ${requested.back}`
+        : null,
+      requested.front > 0
+        ? `${partTypeLabel("FRONT")} × ${requested.front}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     await sendReservationNotification({
       name: parsed.data.name,
       phone: parsed.data.phone,
       locality: parsed.data.locality,
-      quarterCount: parsed.data.quarterCount,
-      partLabel: partTypeLabel(partType),
+      quarterCount: 1,
+      partLabel: result.waitlist ? `${partsText} (очередь)` : partsText,
     }).catch((error) => console.error("MAX notification failed", error));
 
     return NextResponse.json({

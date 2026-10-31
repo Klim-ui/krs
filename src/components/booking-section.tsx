@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import {
   type PartChoice,
+  type PartCounts,
   PART_PRICES,
   ReservationForm,
 } from "@/components/reservation-form";
@@ -69,7 +70,7 @@ export function BookingSection({
   estimatedQuarterWeight: number;
   waitlistMode: boolean;
 }) {
-  const [selectedPart, setSelectedPart] = useState<PartChoice>("front");
+  const [counts, setCounts] = useState<PartCounts>({ back: 1, front: 0 });
 
   return (
     <>
@@ -83,9 +84,17 @@ export function BookingSection({
               <button
                 key={item.value}
                 type="button"
-                onClick={() => setSelectedPart(item.value)}
+                onClick={() => {
+                  setCounts((current) => ({
+                    ...current,
+                    [item.value]: Math.max(current[item.value], 1),
+                  }));
+                  document
+                    .getElementById("order")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
                 className={`rounded-2xl border-2 p-6 text-left ${
-                  selectedPart === item.value
+                  counts[item.value] > 0
                     ? "border-[#47733d] bg-[#edf4e9]"
                     : "border-[#e5dccf] bg-white"
                 }`}
@@ -160,8 +169,8 @@ export function BookingSection({
               totalRemainingBacks={totalRemainingBacks}
               totalRemainingPacks={totalRemainingPacks}
               estimatedQuarterWeight={estimatedQuarterWeight}
-              selectedPart={selectedPart}
-              onPartChange={setSelectedPart}
+              counts={counts}
+              onCountsChange={setCounts}
             />
           </div>
         </div>
