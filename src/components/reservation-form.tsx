@@ -5,12 +5,11 @@ import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { trackBooking } from "@/lib/metrika";
 
 export type PartChoice = "front" | "back";
-
-export const FRONT_PACK_KG = 12;
+export type PartCounts = Record<PartChoice, number>;
 
 const PART_PRICES: Record<PartChoice, number> = {
-  front: 530,
-  back: 570,
+  front: 550,
+  back: 600,
 };
 
 const PART_OPTIONS: Array<{
@@ -21,12 +20,12 @@ const PART_OPTIONS: Array<{
   {
     value: "back",
     title: "Задняя четверть целиком",
-    details: "~45–55 кг: тазобедренная, вырезка, край, голяшка",
+    details: "~45–55 кг на кости: тазобедренная, вырезка, край, голяшка",
   },
   {
     value: "front",
-    title: "Набор из переда 10–15 кг",
-    details: "Считаем ~12 кг. 40% мякоти, 30% рёбер, 20% антрекотов, 10% супового",
+    title: "Передняя четверть целиком",
+    details: "~45–55 кг на кости: лопатка, шея, грудинка, рёбра, голяшка",
   },
 ];
 
@@ -56,8 +55,8 @@ export function ReservationForm({
   totalRemainingBacks,
   totalRemainingPacks,
   estimatedQuarterWeight,
-  selectedPart,
-  onPartChange,
+  counts,
+  onCountsChange,
 }: {
   currentHeadNumber: number;
   remainingBacks: number;
@@ -65,23 +64,26 @@ export function ReservationForm({
   totalRemainingBacks: number;
   totalRemainingPacks: number;
   estimatedQuarterWeight: number;
-  selectedPart: PartChoice;
-  onPartChange: (value: PartChoice) => void;
+  counts: PartCounts;
+  onCountsChange: (value: PartCounts) => void;
 }) {
   const [phone, setPhone] = useState("+7");
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState<"booked" | "waitlist" | null>(null);
   const [error, setError] = useState("");
-  const currentRemaining =
-    selectedPart === "front" ? remainingPacks : remainingBacks;
-  const totalRemaining =
-    selectedPart === "front" ? totalRemainingPacks : totalRemainingBacks;
-  const waitlist = currentRemaining < 1 && totalRemaining > 0;
-  const maxUnits = Math.min(
-    selectedPart === "front" ? 4 : 2,
-    waitlist ? totalRemaining : currentRemaining,
+  const maxByPart: PartCounts = {
+    back: Math.min(2, totalRemainingBacks),
+    front: Math.min(2, totalRemainingPacks),
+  };
+  const back = Math.min(counts.back, maxByPart.back);
+  const front = Math.min(counts.front, maxByPart.front);
+  const totalQuarters = back + front;
+  // Если на текущую тушу не влезает — заявка уйдёт в очередь на следующую.
+  const waitlist =
+    totalQuarters > 0 && (back > remainingBacks || front > remainingPacks);
+  const estimatedTotal = Math.round(
+    estimatedQuarterWeight * (back * PART_PRICES.back + front * PART_PRICES.front),
   );
-  const pricePerKg = PART_PRICES[selectedPart];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -89,6 +91,11 @@ export function ReservationForm({
     setError("");
 
     const form = new FormData(event.currentTarget);
+    if (totalQuarters < 1) {
+      setPending(false);
+      setError("Выберите хотя бы одну четверть");
+      return;
+    }
     if (phone.replace(/\D/g, "").length !== 11) {
       setPending(false);
       setError("Введите российский номер полностью");
@@ -101,9 +108,8 @@ export function ReservationForm({
         name: form.get("name"),
         phone,
         locality: form.get("locality"),
-        quarterCount: form.get("quarterCount"),
-        part_type: selectedPart,
-        selectedPrice: pricePerKg,
+        backCount: back,
+        frontCount: front,
         website: form.get("website"),
       }),
     });
@@ -140,7 +146,7 @@ export function ReservationForm({
   if (totalRemainingBacks < 1 && totalRemainingPacks < 1) {
     return (
       <p className="py-10 text-center text-[#675e51]">
-        Все задние четверти и наборы переда уже забронированы.
+        Все четверти уже забронированы.
       </p>
     );
   }
@@ -184,61 +190,65 @@ export function ReservationForm({
       </label>
 
       <fieldset className="grid gap-3 sm:col-span-2">
-        <legend className="text-sm font-medium">Часть туши</legend>
+        <legend className="text-sm font-medium">
+          Сколько четвертей — можно взять и зад, и перед
+        </legend>
         {PART_OPTIONS.map((option) => (
-          <label
+          <div
             key={option.value}
-            className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${
-              selectedPart === option.value
+            className={`grid gap-3 rounded-2xl border p-4 transition sm:grid-cols-[1fr_auto] sm:items-center ${
+              (option.value === "back" ? back : front) > 0
                 ? "border-[#47733d] bg-[#edf4e9]"
                 : "border-[#d8cdbd] bg-white"
             }`}
           >
-            <input
-              type="radio"
-              name="part_type"
-              value={option.value}
-              checked={selectedPart === option.value}
-              onChange={() => onPartChange(option.value)}
-              className="mt-1"
-            />
             <span>
               <b className="block">{option.title}</b>
               <small className="text-[#71685b]">{option.details}</small>
               <small className="mt-1 block font-semibold text-[#9f2f24]">
                 {PART_PRICES[option.value]} ₽/кг · ~
                 {Math.round(
-                  (option.value === "front"
-                    ? FRONT_PACK_KG
-                    : estimatedQuarterWeight) * PART_PRICES[option.value],
+                  estimatedQuarterWeight * PART_PRICES[option.value],
                 ).toLocaleString("ru-RU")}{" "}
-                ₽
+                ₽ за четверть
               </small>
             </span>
-          </label>
+            <select
+              aria-label={`${option.title}: количество`}
+              value={option.value === "back" ? back : front}
+              onChange={(event) =>
+                onCountsChange({
+                  back,
+                  front,
+                  [option.value]: Number(event.target.value),
+                })
+              }
+              disabled={maxByPart[option.value] < 1}
+              className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] disabled:opacity-50"
+            >
+              {Array.from(
+                { length: maxByPart[option.value] + 1 },
+                (_, index) => (
+                  <option key={index} value={index}>
+                    {index === 0
+                      ? "Не нужно"
+                      : index === 1
+                        ? "1 четверть"
+                        : "2 четверти"}
+                  </option>
+                ),
+              )}
+            </select>
+          </div>
         ))}
+        {totalQuarters > 0 ? (
+          <p className="text-base font-semibold">
+            Ориентировочно {estimatedTotal.toLocaleString("ru-RU")} ₽ за ~
+            {Math.round(estimatedQuarterWeight * totalQuarters)} кг. Точная
+            сумма — по весам.
+          </p>
+        ) : null}
       </fieldset>
-
-      <label className="grid gap-2 text-sm font-medium sm:col-span-2">
-        {selectedPart === "front" ? "Количество наборов" : "Количество четвертей"}
-        <select
-          name="quarterCount"
-          className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d]"
-        >
-          {Array.from({ length: Math.max(maxUnits, 0) }, (_, index) => (
-            <option key={index + 1} value={index + 1}>
-              {index + 1}{" "}
-              {selectedPart === "front"
-                ? index === 0
-                  ? "набор ~12 кг"
-                  : "набора"
-                : index === 0
-                  ? "четверть"
-                  : "четверти"}
-            </option>
-          ))}
-        </select>
-      </label>
 
       <input
         name="website"
@@ -256,7 +266,7 @@ export function ReservationForm({
 
       <div className="sm:col-span-2">
         <button
-          disabled={pending || maxUnits < 1}
+          disabled={pending || totalQuarters < 1}
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#9f2f24] px-6 font-semibold text-white transition hover:bg-[#85261d] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending && <LoaderCircle className="size-5 animate-spin" />}

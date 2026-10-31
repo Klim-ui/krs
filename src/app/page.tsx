@@ -5,7 +5,6 @@ import { FaqSection } from "@/components/faq-section";
 import { StickyBookBar } from "@/components/sticky-book-bar";
 import { getContacts } from "@/lib/contacts";
 import {
-  FRONT_PACK_KG,
   PART_PRICES,
   TOTAL_BACKS,
   TOTAL_PACKS,
@@ -51,9 +50,9 @@ const diary = [
 
 const steps = [
   ["Бронь без денег", "Имя, телефон, село. Никаких переводов заранее."],
-  ["Звонок фермера", "Подтвердим зад или набор и день доставки."],
+  ["Звонок фермера", "Подтвердим четверть и скажу, когда приезжать."],
   ["Забой после набора", "Ветэкспертиза. Мясо не лежит «на витрине»."],
-  ["Весы у крыльца", "Взвешиваем при вас, платите по факту. Доставка бесплатно."],
+  ["Забираете сами", "Приезжаете в Таврическое, взвешиваем при вас, платите по факту."],
 ];
 
 export const dynamic = "force-dynamic";
@@ -114,28 +113,28 @@ export default async function Home() {
             <div className="min-w-0">
               <p className="mb-4 inline-flex items-center gap-2 text-base font-semibold text-[#47733d]">
                 <MapPin className="size-5" />
-                Тавричанка → Таврический район и Омск
+                Таврическое, Омская область · самовывоз
               </p>
               <h1 className="font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-6xl">
-                Домашняя говядина своих тёлок — на зиму, без предоплаты
+                Домашняя говядина своих тёлок — четвертями, без предоплаты
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-8 text-[#4f473c]">
                 Растил сам: полгода на подсосе, потом год на сене, ячмене и
-                овсе. Зад — четвертью целиком, перед — наборами 10–15 кг. Платите
-                после взвешивания у крыльца.
+                овсе. Четверть целиком, на кости. Забираете сами в Таврическом,
+                взвешиваем при вас — платите по факту.
               </p>
 
               <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl bg-white px-4 py-3">
-                  <b className="block text-2xl">≈ {rub(FRONT_PACK_KG * PART_PRICES.FRONT)}</b>
+                  <b className="block text-2xl">{PART_PRICES.BACK} ₽/кг</b>
                   <small className="text-base text-[#635b50]">
-                    набор переда ~{FRONT_PACK_KG} кг · {PART_PRICES.FRONT} ₽/кг
+                    задняя четверть ~{backKg} кг ≈ {rub(backKg * PART_PRICES.BACK)}
                   </small>
                 </div>
                 <div className="rounded-2xl bg-white px-4 py-3">
-                  <b className="block text-2xl">≈ {rub(backKg * PART_PRICES.BACK)}</b>
+                  <b className="block text-2xl">{PART_PRICES.FRONT} ₽/кг</b>
                   <small className="text-base text-[#635b50]">
-                    задняя четверть ~{backKg} кг · {PART_PRICES.BACK} ₽/кг
+                    передняя четверть ~{backKg} кг ≈ {rub(backKg * PART_PRICES.FRONT)}
                   </small>
                 </div>
               </div>
@@ -177,7 +176,7 @@ export default async function Home() {
                   ) : (
                     <>
                       <b>Свободно сейчас:</b> задних четвертей —{" "}
-                      {pool.remainingBacks}, наборов переда —{" "}
+                      {pool.remainingBacks}, передних —{" "}
                       {pool.remainingPacks}.
                     </>
                   )}{" "}
@@ -268,8 +267,8 @@ export default async function Home() {
           </ol>
           {pool ? (
             <p className="mt-8 text-base text-white/80">
-              Всего на три тёлки: {TOTAL_BACKS} задних четвертей и {TOTAL_PACKS}{" "}
-              наборов переда. Забронировано: {pool.totalReservedBacks} и{" "}
+              Всего на три тёлки: {TOTAL_BACKS} задних и {TOTAL_PACKS} передних
+              четвертей. Забронировано: {pool.totalReservedBacks} и{" "}
               {pool.totalReservedPacks}.
             </p>
           ) : null}

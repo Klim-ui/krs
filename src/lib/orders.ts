@@ -5,15 +5,16 @@ import { orders, pools } from "@/db/schema";
 export const TOTAL_HEADS = 3;
 export const QUARTERS_PER_HEAD = 4;
 export const BACKS_PER_HEAD = 2;
-export const PACKS_PER_HEAD = 8;
-export const FRONT_PACK_KG = 12;
+// Перед теперь продаём целой четвертью, как и зад: 2 передние четверти с головы.
+// Имена *PACKS* оставлены для совместимости — по смыслу это передние четверти.
+export const PACKS_PER_HEAD = 2;
 export const TOTAL_BACKS = TOTAL_HEADS * BACKS_PER_HEAD;
 export const TOTAL_PACKS = TOTAL_HEADS * PACKS_PER_HEAD;
 
 export const PART_PRICES = {
-  FRONT: 530,
-  BACK: 570,
-  ANY: 550,
+  FRONT: 550,
+  BACK: 600,
+  ANY: 600,
 } as const;
 
 export type PartType = keyof typeof PART_PRICES;
@@ -303,7 +304,7 @@ export function toPartType(value: "front" | "back" | "any"): PartType {
 
 export function partTypeLabel(type: PartType) {
   return type === "FRONT"
-    ? "Набор переда ~12 кг"
+    ? "Передняя четверть"
     : type === "BACK"
       ? "Задняя четверть"
       : "Четверть";
