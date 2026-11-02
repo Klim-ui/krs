@@ -145,14 +145,14 @@ export function BookingSection({
             <figure>
               <Image
                 src="/photos/razdelka.webp"
-                alt="Фермер в цеху держит стейк, на столе разделанная говядина"
-                width={1280}
-                height={960}
+                alt="Разделанная говядина: стейки на кости, рёбра, оссобуко, кусок в вакууме с этикеткой"
+                width={1440}
+                height={810}
                 sizes="(min-width: 1024px) 560px, 100vw"
                 className="w-full rounded-xl object-cover"
               />
               <figcaption className="mt-2 text-sm text-[#635b50]">
-                Это я в цеху — разделываю сам
+                Моя разделка
               </figcaption>
             </figure>
             <div>
