@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import {
+  BOX_KG,
   type PartChoice,
   type PartCounts,
   PART_PRICES,
@@ -10,7 +11,7 @@ import {
 } from "@/components/reservation-form";
 
 const offers: Array<{
-  value: PartChoice;
+  value: Exclude<PartChoice, "box">;
   title: string;
   weight: string;
   description: string;
@@ -34,10 +35,18 @@ const offers: Array<{
   },
 ];
 
+const boxContents = [
+  "Стейки на кости — рибай, T-bone",
+  "Мякоть — на жаркое, гуляш, запекание",
+  "Фарш из своей обрези",
+  "Рёбра, грудинка, оссобуко",
+  "Суповые кости",
+];
+
 const tips = [
   {
-    title: "Отдаём целиком, на кости",
-    text: "Четверть — как есть после разруба туши. Делите дома на куски под свою семью.",
+    title: "Четверть — целиком, набор — разделан",
+    text: "Четверть отдаём как есть после разруба, на кости. Набор разделываю сам — я мясник: порционно, каждый кусок подписан.",
   },
   {
     title: "Вес — при вас",
@@ -49,7 +58,7 @@ const tips = [
   },
   {
     title: "Куда положить",
-    text: "Четверть ~50 кг — это морозильный ларь. Многие берут одну четверть на две семьи.",
+    text: "Четверть ~50 кг — это морозильный ларь. Набор 10 кг влезает в обычную морозилку.",
   },
 ];
 
@@ -59,6 +68,8 @@ export function BookingSection({
   remainingPacks,
   totalRemainingBacks,
   totalRemainingPacks,
+  remainingBoxes,
+  totalBoxes,
   estimatedQuarterWeight,
   waitlistMode,
 }: {
@@ -67,10 +78,25 @@ export function BookingSection({
   remainingPacks: number;
   totalRemainingBacks: number;
   totalRemainingPacks: number;
+  remainingBoxes: number;
+  totalBoxes: number;
   estimatedQuarterWeight: number;
   waitlistMode: boolean;
 }) {
-  const [counts, setCounts] = useState<PartCounts>({ back: 1, front: 0 });
+  const [counts, setCounts] = useState<PartCounts>({
+    back: 1,
+    front: 0,
+    box: 0,
+  });
+
+  function pick(value: PartChoice) {
+    setCounts((current) =>
+      value === "box"
+        ? { back: 0, front: 0, box: Math.max(current.box, 1) }
+        : { ...current, [value]: Math.max(current[value], 1) },
+    );
+    document.getElementById("order")?.scrollIntoView({ behavior: "smooth" });
+  }
 
   return (
     <>
@@ -84,15 +110,7 @@ export function BookingSection({
               <button
                 key={item.value}
                 type="button"
-                onClick={() => {
-                  setCounts((current) => ({
-                    ...current,
-                    [item.value]: Math.max(current[item.value], 1),
-                  }));
-                  document
-                    .getElementById("order")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
+                onClick={() => pick(item.value)}
                 className={`rounded-2xl border-2 p-6 text-left ${
                   counts[item.value] > 0
                     ? "border-[#47733d] bg-[#edf4e9]"
@@ -114,6 +132,60 @@ export function BookingSection({
                 </p>
               </button>
             ))}
+          </div>
+
+          <div
+            id="nabor"
+            className={`mt-4 grid gap-6 rounded-2xl border-2 p-6 sm:grid-cols-[minmax(0,434px)_1fr] sm:items-center ${
+              counts.box > 0
+                ? "border-[#47733d] bg-[#edf4e9]"
+                : "border-[#9f2f24]/30 bg-[#fbf3ee]"
+            }`}
+          >
+            <figure>
+              <Image
+                src="/photos/razdelka.webp"
+                alt="Разделанная говядина: стейки на кости, оссобуко, мякоть в вакууме"
+                width={434}
+                height={193}
+                sizes="(min-width: 640px) 434px, 100vw"
+                className="w-full rounded-xl object-cover"
+              />
+              <figcaption className="mt-2 text-sm text-[#635b50]">
+                Моя разделка
+              </figcaption>
+            </figure>
+            <div>
+              <span className="text-base font-semibold text-[#9f2f24]">
+                {BOX_KG} кг · {PART_PRICES.box} ₽/кг ·{" "}
+                {(BOX_KG * PART_PRICES.box).toLocaleString("ru-RU")} ₽
+              </span>
+              <h3 className="mt-2 font-serif text-2xl font-semibold">
+                Набор {BOX_KG} кг — уже разделано
+              </h3>
+              <p className="mt-2 text-base leading-7 text-[#4f473c]">
+                Если четверть — это много. Разделываю сам, понемногу от всей
+                туши: не одни кости и не одна шея.
+              </p>
+              <ul className="mt-3 grid gap-1 text-base text-[#4f473c] sm:grid-cols-2">
+                {boxContents.map((line) => (
+                  <li key={line}>· {line}</li>
+                ))}
+              </ul>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => pick("box")}
+                  disabled={remainingBoxes < 1}
+                  className="flex h-12 items-center justify-center rounded-xl bg-[#9f2f24] px-6 font-semibold text-white disabled:opacity-50"
+                >
+                  {remainingBoxes > 0 ? "Забронировать набор" : "Наборы разобраны"}
+                </button>
+                <small className="text-base text-[#635b50]">
+                  Свободно {remainingBoxes} из {totalBoxes} наборов
+                </small>
+              </div>
+            </div>
           </div>
 
           <div className="mt-10 grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -168,6 +240,7 @@ export function BookingSection({
               remainingPacks={remainingPacks}
               totalRemainingBacks={totalRemainingBacks}
               totalRemainingPacks={totalRemainingPacks}
+              remainingBoxes={remainingBoxes}
               estimatedQuarterWeight={estimatedQuarterWeight}
               counts={counts}
               onCountsChange={setCounts}

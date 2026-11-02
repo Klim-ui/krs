@@ -2,7 +2,9 @@ import { asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
 
-export const TOTAL_HEADS = 3;
+// Три тёлки: две продаём четвертями, одну — разделанными наборами по 10 кг.
+export const HEADS_TOTAL = 3;
+export const TOTAL_HEADS = 2;
 export const QUARTERS_PER_HEAD = 4;
 export const BACKS_PER_HEAD = 2;
 // Перед теперь продаём целой четвертью, как и зад: 2 передние четверти с головы.
@@ -15,7 +17,13 @@ export const PART_PRICES = {
   FRONT: 550,
   BACK: 600,
   ANY: 600,
+  BOX: 800,
 } as const;
+
+/** Набор: разделанное мясо одной тёлки, поровну всего — стейки, мякоть, фарш, рёбра, суповое. */
+export const BOX_KG = 10;
+export const BOXES_TOTAL = 17;
+export const BOX_PRICE = BOX_KG * PART_PRICES.BOX;
 
 export type PartType = keyof typeof PART_PRICES;
 
@@ -55,7 +63,16 @@ export type CurrentPool = {
   estimatedQuarterWeight: number;
   slaughterDate: Date | null;
   isCurrentPoolFull: boolean;
+  reservedBoxes: number;
+  remainingBoxes: number;
 };
+
+export function boxesUsed(rows: SlotRow[]) {
+  return rows.reduce(
+    (sum, row) => sum + (row.partType === "BOX" ? row.units : 0),
+    0,
+  );
+}
 
 export async function getCurrentPool(): Promise<CurrentPool | null> {
   const db = getDb();
@@ -124,6 +141,8 @@ export async function getCurrentPool(): Promise<CurrentPool | null> {
     estimatedQuarterWeight: Number(pool.estimatedQuarterWeight),
     slaughterDate: pool.slaughterDate,
     isCurrentPoolFull: activeRemainingQuarters < 1,
+    reservedBoxes: boxesUsed(allRows),
+    remainingBoxes: Math.max(0, BOXES_TOTAL - boxesUsed(allRows)),
   };
 }
 
@@ -161,10 +180,9 @@ export async function getAdminData() {
   ]);
 
   const activeOrders = allOrders.filter((order) => order.status !== "REJECTED");
-  const totalQuarters = activeOrders.reduce(
-    (sum, order) => sum + order.quarterCount,
-    0,
-  );
+  const totalQuarters = activeOrders
+    .filter((order) => order.partType !== "BOX")
+    .reduce((sum, order) => sum + order.quarterCount, 0);
   const totalWeight = activeOrders.reduce(
     (sum, order) => sum + Number(order.estimatedWeight),
     0,
@@ -285,7 +303,7 @@ export async function createPool(input: {
       .limit(1);
 
     if ((lastPool?.number ?? 0) >= TOTAL_HEADS) {
-      throw new Error("Можно создать не более трёх пулов");
+      throw new Error(`Можно создать не более ${TOTAL_HEADS} пулов под четверти`);
     }
 
     await tx.insert(pools).values({
@@ -307,5 +325,7 @@ export function partTypeLabel(type: PartType) {
     ? "Передняя четверть"
     : type === "BACK"
       ? "Задняя четверть"
-      : "Четверть";
+      : type === "BOX"
+        ? `Набор ${BOX_KG} кг`
+        : "Четверть";
 }
