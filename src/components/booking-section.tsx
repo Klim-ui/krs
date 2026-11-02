@@ -136,7 +136,7 @@ export function BookingSection({
 
           <div
             id="nabor"
-            className={`mt-4 grid gap-6 rounded-2xl border-2 p-6 sm:grid-cols-[minmax(0,434px)_1fr] sm:items-center ${
+            className={`mt-4 grid gap-6 rounded-2xl border-2 p-6 lg:grid-cols-[1.15fr_1fr] lg:items-center ${
               counts.box > 0
                 ? "border-[#47733d] bg-[#edf4e9]"
                 : "border-[#9f2f24]/30 bg-[#fbf3ee]"
@@ -145,10 +145,10 @@ export function BookingSection({
             <figure>
               <Image
                 src="/photos/razdelka.webp"
-                alt="Разделанная говядина: стейки на кости, оссобуко, мякоть в вакууме"
-                width={434}
-                height={193}
-                sizes="(min-width: 640px) 434px, 100vw"
+                alt="Разделанная говядина: стейки на кости, рёбра, оссобуко, кусок в вакууме с этикеткой"
+                width={1440}
+                height={810}
+                sizes="(min-width: 1024px) 560px, 100vw"
                 className="w-full rounded-xl object-cover"
               />
               <figcaption className="mt-2 text-sm text-[#635b50]">
