@@ -5,6 +5,9 @@ import { FaqSection } from "@/components/faq-section";
 import { StickyBookBar } from "@/components/sticky-book-bar";
 import { getContacts } from "@/lib/contacts";
 import {
+  BOXES_TOTAL,
+  BOX_KG,
+  BOX_PRICE,
   PART_PRICES,
   TOTAL_BACKS,
   TOTAL_PACKS,
@@ -50,7 +53,7 @@ const diary = [
 
 const steps = [
   ["Бронь без денег", "Имя, телефон, село. Никаких переводов заранее."],
-  ["Звонок фермера", "Подтвердим четверть и скажу, когда приезжать."],
+  ["Звонок фермера", "Подтвердим заказ и скажу, когда приезжать."],
   ["Забой после набора", "Ветэкспертиза. Мясо не лежит «на витрине»."],
   ["Забираете сами", "Приезжаете в Таврическое, взвешиваем при вас, платите по факту."],
 ];
@@ -116,12 +119,13 @@ export default async function Home() {
                 Таврическое, Омская область · самовывоз
               </p>
               <h1 className="font-serif text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-6xl">
-                Домашняя говядина своих тёлок — четвертями, без предоплаты
+                Домашняя говядина своих тёлок — четвертями и наборами по 10 кг
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-8 text-[#4f473c]">
                 Растил сам: полгода на подсосе, потом год на сене, ячмене и
-                овсе. Четверть целиком, на кости. Забираете сами в Таврическом,
-                взвешиваем при вас — платите по факту.
+                овсе. Четверть — целиком на кости, набор — разделан мной на
+                стейки, мякоть и фарш. Без предоплаты: забираете в Таврическом,
+                взвешиваем при вас.
               </p>
 
               <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-2">
@@ -137,6 +141,20 @@ export default async function Home() {
                     передняя четверть ~{backKg} кг ≈ {rub(backKg * PART_PRICES.FRONT)}
                   </small>
                 </div>
+                <a
+                  href="#nabor"
+                  className="rounded-2xl border-2 border-[#9f2f24]/40 bg-white px-4 py-3 sm:col-span-2"
+                >
+                  <b className="block text-2xl">
+                    {PART_PRICES.BOX} ₽/кг{" "}
+                    <span className="text-base font-semibold text-[#9f2f24]">
+                      · набор {BOX_KG} кг = {BOX_PRICE.toLocaleString("ru-RU")} ₽
+                    </span>
+                  </b>
+                  <small className="text-base text-[#635b50]">
+                    уже разделано: стейки, мякоть, фарш, рёбра, суповое
+                  </small>
+                </a>
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -177,7 +195,7 @@ export default async function Home() {
                     <>
                       <b>Свободно сейчас:</b> задних четвертей —{" "}
                       {pool.remainingBacks}, передних —{" "}
-                      {pool.remainingPacks}.
+                      {pool.remainingPacks}, наборов — {pool.remainingBoxes}.
                     </>
                   )}{" "}
                   Забой —{" "}
@@ -267,9 +285,10 @@ export default async function Home() {
           </ol>
           {pool ? (
             <p className="mt-8 text-base text-white/80">
-              Всего на три тёлки: {TOTAL_BACKS} задних и {TOTAL_PACKS} передних
-              четвертей. Забронировано: {pool.totalReservedBacks} и{" "}
-              {pool.totalReservedPacks}.
+              Две тёлки — четвертями: {TOTAL_BACKS} задних и {TOTAL_PACKS}{" "}
+              передних, забронировано {pool.totalReservedBacks} и{" "}
+              {pool.totalReservedPacks}. Третья — наборами: {BOXES_TOTAL} по{" "}
+              {BOX_KG} кг, забронировано {pool.reservedBoxes}.
             </p>
           ) : null}
         </div>
@@ -282,6 +301,8 @@ export default async function Home() {
           remainingPacks={pool.remainingPacks}
           totalRemainingBacks={pool.totalRemainingBacks}
           totalRemainingPacks={pool.totalRemainingPacks}
+          remainingBoxes={pool.remainingBoxes}
+          totalBoxes={BOXES_TOTAL}
           estimatedQuarterWeight={pool.estimatedQuarterWeight}
           waitlistMode={pool.isCurrentPoolFull}
         />
@@ -317,7 +338,7 @@ export default async function Home() {
         </div>
       </footer>
 
-      {pool && pool.totalRemainingQuarters > 0 ? (
+      {pool && (pool.totalRemainingQuarters > 0 || pool.remainingBoxes > 0) ? (
         <StickyBookBar
           phoneHref={contacts?.phoneHref ?? undefined}
           messengerHref={contacts?.messengerHref ?? undefined}

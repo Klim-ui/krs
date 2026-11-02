@@ -22,7 +22,7 @@ export const orderStatus = pgEnum("order_status", [
   "DELIVERED",
 ]);
 
-export const partType = pgEnum("part_type", ["FRONT", "BACK", "ANY"]);
+export const partType = pgEnum("part_type", ["FRONT", "BACK", "ANY", "BOX"]);
 
 export const pools = pgTable("pools", {
   id: uuid("id").defaultRandom().primaryKey(),

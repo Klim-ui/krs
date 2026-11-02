@@ -26,6 +26,13 @@ export const orderSchema = z.object({
     .min(0)
     .max(2, "Передних четвертей — не больше двух за раз")
     .optional(),
+  // Наборы по 10 кг (разделанное мясо).
+  boxCount: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(3, "Наборов — не больше трёх за раз")
+    .optional(),
   // Старый формат (одна часть на заявку) — на случай открытой старой страницы.
   quarterCount: z.coerce.number().int().min(1).max(2).optional(),
   part_type: z.enum(["front", "back", "any"]).optional(),

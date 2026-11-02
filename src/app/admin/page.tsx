@@ -145,7 +145,7 @@ export default async function AdminPage() {
                   <th className="px-5 py-3 font-semibold">Клиент</th>
                   <th className="px-5 py-3 font-semibold">Телефон</th>
                   <th className="px-5 py-3 font-semibold">Откуда</th>
-                  <th className="px-5 py-3 font-semibold">Пул / четверти</th>
+                  <th className="px-5 py-3 font-semibold">Пул / кол-во</th>
                   <th className="px-5 py-3 font-semibold">Часть</th>
                   <th className="px-5 py-3 font-semibold">Дата</th>
                   <th className="px-5 py-3 font-semibold">Статус</th>

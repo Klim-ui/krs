@@ -4,13 +4,16 @@ import { FormEvent, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { trackBooking } from "@/lib/metrika";
 
-export type PartChoice = "front" | "back";
+export type PartChoice = "front" | "back" | "box";
 export type PartCounts = Record<PartChoice, number>;
 
 const PART_PRICES: Record<PartChoice, number> = {
   front: 550,
   back: 600,
+  box: 800,
 };
+
+export const BOX_KG = 10;
 
 const PART_OPTIONS: Array<{
   value: PartChoice;
@@ -27,7 +30,27 @@ const PART_OPTIONS: Array<{
     title: "Передняя четверть целиком",
     details: "~45–55 кг на кости: лопатка, шея, грудинка, рёбра, голяшка",
   },
+  {
+    value: "box",
+    title: "Набор 10 кг — разделано",
+    details: "Стейки, мякоть, фарш, рёбра, суповое — порционно, подписано",
+  },
 ];
+
+function priceLine(value: PartChoice, quarterKg: number) {
+  if (value === "box") {
+    return `${PART_PRICES.box} ₽/кг · ${(BOX_KG * PART_PRICES.box).toLocaleString("ru-RU")} ₽ за набор`;
+  }
+  return `${PART_PRICES[value]} ₽/кг · ~${Math.round(
+    quarterKg * PART_PRICES[value],
+  ).toLocaleString("ru-RU")} ₽ за четверть`;
+}
+
+function countLabel(value: PartChoice, count: number) {
+  if (count === 0) return "Не нужно";
+  if (value === "box") return count === 1 ? "1 набор" : `${count} набора`;
+  return count === 1 ? "1 четверть" : "2 четверти";
+}
 
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "").replace(/^8/, "7").slice(0, 11);
@@ -54,6 +77,7 @@ export function ReservationForm({
   remainingPacks,
   totalRemainingBacks,
   totalRemainingPacks,
+  remainingBoxes,
   estimatedQuarterWeight,
   counts,
   onCountsChange,
@@ -63,6 +87,7 @@ export function ReservationForm({
   remainingPacks: number;
   totalRemainingBacks: number;
   totalRemainingPacks: number;
+  remainingBoxes: number;
   estimatedQuarterWeight: number;
   counts: PartCounts;
   onCountsChange: (value: PartCounts) => void;
@@ -74,16 +99,22 @@ export function ReservationForm({
   const maxByPart: PartCounts = {
     back: Math.min(2, totalRemainingBacks),
     front: Math.min(2, totalRemainingPacks),
+    box: Math.min(3, remainingBoxes),
   };
   const back = Math.min(counts.back, maxByPart.back);
   const front = Math.min(counts.front, maxByPart.front);
+  const box = Math.min(counts.box, maxByPart.box);
+  const current: PartCounts = { back, front, box };
   const totalQuarters = back + front;
+  const totalItems = totalQuarters + box;
   // Если на текущую тушу не влезает — заявка уйдёт в очередь на следующую.
   const waitlist =
     totalQuarters > 0 && (back > remainingBacks || front > remainingPacks);
   const estimatedTotal = Math.round(
-    estimatedQuarterWeight * (back * PART_PRICES.back + front * PART_PRICES.front),
+    estimatedQuarterWeight * (back * PART_PRICES.back + front * PART_PRICES.front) +
+      box * BOX_KG * PART_PRICES.box,
   );
+  const estimatedKg = Math.round(estimatedQuarterWeight * totalQuarters + box * BOX_KG);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,9 +122,9 @@ export function ReservationForm({
     setError("");
 
     const form = new FormData(event.currentTarget);
-    if (totalQuarters < 1) {
+    if (totalItems < 1) {
       setPending(false);
-      setError("Выберите хотя бы одну четверть");
+      setError("Выберите четверть или набор");
       return;
     }
     if (phone.replace(/\D/g, "").length !== 11) {
@@ -110,6 +141,7 @@ export function ReservationForm({
         locality: form.get("locality"),
         backCount: back,
         frontCount: front,
+        boxCount: box,
         website: form.get("website"),
       }),
     });
@@ -143,10 +175,10 @@ export function ReservationForm({
     );
   }
 
-  if (totalRemainingBacks < 1 && totalRemainingPacks < 1) {
+  if (totalRemainingBacks < 1 && totalRemainingPacks < 1 && remainingBoxes < 1) {
     return (
       <p className="py-10 text-center text-[#675e51]">
-        Все четверти уже забронированы.
+        Всё уже забронировано.
       </p>
     );
   }
@@ -191,13 +223,13 @@ export function ReservationForm({
 
       <fieldset className="grid gap-3 sm:col-span-2">
         <legend className="text-sm font-medium">
-          Сколько четвертей — можно взять и зад, и перед
+          Что берёте — можно сочетать
         </legend>
         {PART_OPTIONS.map((option) => (
           <div
             key={option.value}
             className={`grid gap-3 rounded-2xl border p-4 transition sm:grid-cols-[1fr_auto] sm:items-center ${
-              (option.value === "back" ? back : front) > 0
+              current[option.value] > 0
                 ? "border-[#47733d] bg-[#edf4e9]"
                 : "border-[#d8cdbd] bg-white"
             }`}
@@ -206,20 +238,15 @@ export function ReservationForm({
               <b className="block">{option.title}</b>
               <small className="text-[#71685b]">{option.details}</small>
               <small className="mt-1 block font-semibold text-[#9f2f24]">
-                {PART_PRICES[option.value]} ₽/кг · ~
-                {Math.round(
-                  estimatedQuarterWeight * PART_PRICES[option.value],
-                ).toLocaleString("ru-RU")}{" "}
-                ₽ за четверть
+                {priceLine(option.value, estimatedQuarterWeight)}
               </small>
             </span>
             <select
               aria-label={`${option.title}: количество`}
-              value={option.value === "back" ? back : front}
+              value={current[option.value]}
               onChange={(event) =>
                 onCountsChange({
-                  back,
-                  front,
+                  ...current,
                   [option.value]: Number(event.target.value),
                 })
               }
@@ -230,22 +257,17 @@ export function ReservationForm({
                 { length: maxByPart[option.value] + 1 },
                 (_, index) => (
                   <option key={index} value={index}>
-                    {index === 0
-                      ? "Не нужно"
-                      : index === 1
-                        ? "1 четверть"
-                        : "2 четверти"}
+                    {countLabel(option.value, index)}
                   </option>
                 ),
               )}
             </select>
           </div>
         ))}
-        {totalQuarters > 0 ? (
+        {totalItems > 0 ? (
           <p className="text-base font-semibold">
             Ориентировочно {estimatedTotal.toLocaleString("ru-RU")} ₽ за ~
-            {Math.round(estimatedQuarterWeight * totalQuarters)} кг. Точная
-            сумма — по весам.
+            {estimatedKg} кг. Точная сумма — по весам.
           </p>
         ) : null}
       </fieldset>
@@ -266,7 +288,7 @@ export function ReservationForm({
 
       <div className="sm:col-span-2">
         <button
-          disabled={pending || totalQuarters < 1}
+          disabled={pending || totalItems < 1}
           className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#9f2f24] px-6 font-semibold text-white transition hover:bg-[#85261d] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending && <LoaderCircle className="size-5 animate-spin" />}

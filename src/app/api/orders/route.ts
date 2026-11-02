@@ -4,6 +4,8 @@ import { getDb } from "@/db";
 import { orders, pools } from "@/db/schema";
 import { sendReservationNotification } from "@/lib/max";
 import {
+  BOXES_TOTAL,
+  BOX_KG,
   PART_PRICES,
   QUARTERS_PER_HEAD,
   TOTAL_HEADS,
@@ -28,9 +30,11 @@ export async function POST(request: Request) {
   }
 
   const requested = requestedQuarters(parsed.data);
-  if (requested.back + requested.front < 1) {
+  const boxes = parsed.data.boxCount ?? 0;
+  const wantsQuarters = requested.back + requested.front > 0;
+  if (!wantsQuarters && boxes < 1) {
     return NextResponse.json(
-      { error: "Выберите хотя бы одну четверть" },
+      { error: "Выберите четверть или набор" },
       { status: 400 },
     );
   }
@@ -67,6 +71,43 @@ export async function POST(request: Request) {
           ),
         )
         .groupBy(orders.poolId, orders.partType);
+
+      if (boxes > 0) {
+        const [boxUsage] = await tx
+          .select({
+            units: sql<number>`coalesce(sum(case when ${orders.status} <> 'REJECTED' then ${orders.quarterCount} else 0 end), 0)::int`,
+          })
+          .from(orders)
+          .where(sql`${orders.partType} = 'BOX'`);
+        const leftBoxes = BOXES_TOTAL - (boxUsage?.units ?? 0);
+        if (boxes > leftBoxes) {
+          throw new CapacityError(
+            leftBoxes > 0
+              ? `Наборов осталось ${leftBoxes}. Уменьшите количество или позвоните — подберём вариант.`
+              : "Наборы на эту тёлку уже разобраны. Можно взять четверть или позвонить фермеру.",
+          );
+        }
+      }
+
+      // Наборы без четвертей просто привязываем к текущему пулу (для учёта).
+      if (!wantsQuarters) {
+        const pool =
+          openPools.find((open) => open.status === "ACTIVE") ?? openPools[0];
+        const created = await tx
+          .insert(orders)
+          .values({
+            poolId: pool.id,
+            name: parsed.data.name,
+            phone: parsed.data.phone,
+            locality: parsed.data.locality,
+            quarterCount: boxes,
+            partType: "BOX",
+            pricePerKgSnapshot: String(PART_PRICES.BOX),
+            estimatedWeightSnapshot: String(BOX_KG * boxes),
+          })
+          .returning({ id: orders.id });
+        return { order: created[0], waitlist: false };
+      }
 
       // Зад и перед одной заявки кладём на одну тушу — чтобы забирать в один день.
       let target = openPools.find((pool) => {
@@ -137,10 +178,23 @@ export async function POST(request: Request) {
         )
         .returning({ id: orders.id });
 
+      if (boxes > 0) {
+        await tx.insert(orders).values({
+          poolId: pool.id,
+          name: parsed.data.name,
+          phone: parsed.data.phone,
+          locality: parsed.data.locality,
+          quarterCount: boxes,
+          partType: "BOX",
+          pricePerKgSnapshot: String(PART_PRICES.BOX),
+          estimatedWeightSnapshot: String(BOX_KG * boxes),
+        });
+      }
+
       return { order: created[0], waitlist };
     });
 
-    const partsText = [
+    const quartersText = [
       requested.back > 0
         ? `${partTypeLabel("BACK")} × ${requested.back}`
         : null,
@@ -150,13 +204,21 @@ export async function POST(request: Request) {
     ]
       .filter(Boolean)
       .join(", ");
+    const partsText = [
+      quartersText && result.waitlist
+        ? `${quartersText} (очередь)`
+        : quartersText,
+      boxes > 0 ? `${partTypeLabel("BOX")} × ${boxes}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     await sendReservationNotification({
       name: parsed.data.name,
       phone: parsed.data.phone,
       locality: parsed.data.locality,
       quarterCount: 1,
-      partLabel: result.waitlist ? `${partsText} (очередь)` : partsText,
+      partLabel: partsText,
     }).catch((error) => console.error("MAX notification failed", error));
 
     return NextResponse.json({
