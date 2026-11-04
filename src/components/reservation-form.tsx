@@ -10,7 +10,7 @@ export type PartCounts = Record<PartChoice, number>;
 const PART_PRICES: Record<PartChoice, number> = {
   front: 550,
   back: 600,
-  box: 800,
+  box: 700,
 };
 
 export const BOX_KG = 10;
