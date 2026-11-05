@@ -210,13 +210,13 @@ export function ReservationForm({
         />
       </label>
       <label className="grid gap-2 text-sm font-medium sm:col-span-2">
-        Населённый пункт
+        {box > 0 ? "Адрес в Омске для доставки набора" : "Населённый пункт"}
         <input
           name="locality"
           required
           minLength={2}
-          autoComplete="address-level2"
-          placeholder="Таврическое"
+          autoComplete={box > 0 ? "street-address" : "address-level2"}
+          placeholder={box > 0 ? "Омск, улица, дом" : "Таврическое"}
           className="h-14 rounded-xl border border-[#d8cdbd] bg-white px-4 text-base outline-none transition focus:border-[#47733d] focus:ring-3 focus:ring-[#47733d]/10"
         />
       </label>
