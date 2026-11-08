@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { YandexMetrika } from "@/components/yandex-metrika";
 import "./globals.css";
 
@@ -41,6 +42,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ru" className="h-full scroll-smooth">
       <body className="flex min-h-full flex-col antialiased">
         <YandexMetrika />
+        <Script
+          defer
+          src="https://umami-production-53ab.up.railway.app/script.js"
+          data-website-id="7fbf57a0-37ec-4371-b51e-e7faf1d7beda"
+          strategy="afterInteractive"
+        />
         {children}
       </body>
     </html>
